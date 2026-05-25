@@ -1,0 +1,220 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Animation for Fidelity icons */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:root {
+  /* Fidelity Design System - Core Colors */
+  /* Primary Blue */
+  --primary-blue: #006193;
+  --primary-blue-rgb: 0, 97, 147;
+  /* Primary Green (CTA) */
+  --primary-green: #739C00;
+  --primary-green-rgb: 115, 156, 0;
+  /* Neutrals */
+  --grey-600: #414956;
+  --grey-600-rgb: 65, 73, 86;
+  --warm-grey-600: #857D76;
+  /* Light variants */
+  --grey-25: #F8F9FA;
+  
+  --background: #FFFFFF;
+  --foreground: var(--grey-600);
+  --card: #FFFFFF;
+  --card-foreground: var(--grey-600);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--grey-600);
+  --primary: var(--primary-blue);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--primary-green);
+  --secondary-foreground: #FFFFFF;
+  --muted: #F0F2F5;
+  --muted-foreground: #8B92A4;
+  --accent: var(--primary-blue);
+  --accent-foreground: #FFFFFF;
+  --destructive: #E31D16;
+  --destructive-foreground: #FFFFFF;
+  --border: #E8EAED;
+  --input: #F8F9FA;
+  --ring: var(--primary-blue);
+  --chart-1: var(--primary-blue);
+  --chart-2: #0D9C9C;
+  --chart-3: #4AA00F;
+  --chart-4: #EA6A18;
+  --chart-5: #841B8F;
+  --radius: 0.25rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: var(--grey-600);
+  --sidebar-primary: var(--primary-blue);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: var(--primary-blue);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #E8EAED;
+  --sidebar-ring: var(--primary-blue);
+
+  /* Locale-aware font stacks (see html[data-locale]) */
+  --font-sans-zh: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-sans-en:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue',
+    Helvetica, Arial, sans-serif;
+  --font-sans-active: var(--font-sans-zh);
+  --font-mono-zh: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, monospace;
+  --font-mono-en: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --font-mono-active: var(--font-mono-zh);
+}
+
+html[data-locale='en'] {
+  --font-sans-active: var(--font-sans-en);
+  --font-mono-active: var(--font-mono-en);
+}
+
+.dark {
+  --background: #1A1F2E;
+  --foreground: #F0F2F5;
+  --card: #242B3A;
+  --card-foreground: #F0F2F5;
+  --popover: #242B3A;
+  --popover-foreground: #F0F2F5;
+  --primary: #3B8DBF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #8AB800;
+  --secondary-foreground: #1A1F2E;
+  --muted: #3A4251;
+  --muted-foreground: #A0A6B5;
+  --accent: #3B8DBF;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF5C52;
+  --destructive-foreground: #FFFFFF;
+  --border: #3A4251;
+  --input: #2E3643;
+  --ring: #3B8DBF;
+  --chart-1: #3B8DBF;
+  --chart-2: #1DC9C9;
+  --chart-3: #5CB422;
+  --chart-4: #FF7D2E;
+  --chart-5: #A623C4;
+  --sidebar: #1A1F2E;
+  --sidebar-foreground: #F0F2F5;
+  --sidebar-primary: #3B8DBF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #3B8DBF;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #3A4251;
+  --sidebar-ring: #3B8DBF;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans-active);
+  --font-mono: var(--font-mono-active);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply h-full overflow-hidden overscroll-none;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .apple-surface {
+    background:
+      radial-gradient(circle at 48% 34%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.35) 24%, transparent 42%),
+      radial-gradient(circle at 66% 70%, rgba(0, 97, 147, 0.1), transparent 34%),
+      linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 42%, #f2f2f4 100%);
+  }
+
+  .dark .apple-surface {
+    background:
+      radial-gradient(circle at 45% 30%, rgba(59, 141, 191, 0.2), transparent 30%),
+      radial-gradient(circle at 70% 75%, rgba(255, 255, 255, 0.08), transparent 34%),
+      linear-gradient(180deg, #10141f 0%, #151a27 54%, #0e111a 100%);
+  }
+
+  .glass-panel {
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow:
+      0 24px 80px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+  }
+
+  .dark .glass-panel {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(18, 23, 34, 0.62);
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-pill {
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.74);
+    box-shadow:
+      0 18px 45px rgba(15, 23, 42, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(30px) saturate(190%);
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+  }
+
+  .dark .glass-pill {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(21, 26, 38, 0.76);
+    box-shadow:
+      0 18px 45px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
