@@ -8,6 +8,8 @@ import Sidebar from "./Sidebar"
 import ChatPane from "./ChatPane"
 import LibraryPage from "./LibraryPage"
 import KnowledgeBaseDetailPage from "./KnowledgeBaseDetailPage"
+import KnowledgeBaseCreatePage from "./KnowledgeBaseCreatePage"
+import KnowledgeBaseImportPage from "./KnowledgeBaseImportPage"
 import GhostIconButton from "./GhostIconButton"
 import { Menu } from "./icons/FidelityIcons"
 import { useLocale } from "./LocaleProvider"
@@ -19,8 +21,13 @@ export default function AIAssistantUI() {
   const pathname = usePathname()
   const router = useRouter()
   const isLibraryList = pathname === "/library"
-  const isLibraryDetail = /^\/library\/[^/]+$/.test(pathname ?? "")
-  const isLibrary = isLibraryList || isLibraryDetail
+  const isLibraryCreate = pathname === "/library/create"
+  const isLibraryImport = /^\/library\/[^/]+\/import$/.test(pathname ?? "")
+  const isLibraryDetail =
+    /^\/library\/[^/]+$/.test(pathname ?? "") &&
+    pathname !== "/library/create" &&
+    !isLibraryImport
+  const isLibrary = isLibraryList || isLibraryDetail || isLibraryCreate || isLibraryImport
   const [mounted, setMounted] = useState(false)
   const [selectedModel, setSelectedModel] = useState("gpt-5")
 
@@ -95,7 +102,13 @@ export default function AIAssistantUI() {
   }, [sidebarOpen, conversations])
 
   useEffect(() => {
-    if (!selectedId && conversations.length > 0 && !isLibraryList && !isLibraryDetail) {
+    if (
+      !selectedId &&
+      conversations.length > 0 &&
+      !isLibraryList &&
+      !isLibraryDetail &&
+      !isLibraryCreate
+    ) {
       createNewChat()
     }
   }, [])
@@ -313,6 +326,10 @@ export default function AIAssistantUI() {
         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {isLibraryList ? (
             <LibraryPage embedded />
+          ) : isLibraryCreate ? (
+            <KnowledgeBaseCreatePage embedded />
+          ) : isLibraryImport ? (
+            <KnowledgeBaseImportPage embedded />
           ) : isLibraryDetail ? (
             <KnowledgeBaseDetailPage embedded />
           ) : (

@@ -1,5 +1,5 @@
 "use client"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { BookOpen, Clock, Folder, FileText } from "lucide-react"
 import {
   SidebarCollapse,
@@ -214,32 +214,22 @@ export default function Sidebar({
 
   return (
     <>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/60 md:hidden"
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={onClose}
+          aria-hidden
+        />
+      )}
 
-      <AnimatePresence mode="wait">
-        {true && (
-          <motion.aside
-            key="sidebar"
-            initial={{ x: -340 }}
-            animate={{ x: open ? 0 : 0 }}
-            exit={{ x: -340 }}
-            transition={{ type: "spring", stiffness: 260, damping: 28 }}
-            className={cls(
-              "glass-panel z-50 flex h-[calc(100%-1.5rem)] min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-3xl",
-              "fixed inset-y-3 left-3 md:static md:m-3 md:mr-0 md:translate-x-0",
-            )}
-          >
+      <aside
+        className={cls(
+          "glass-panel z-50 flex h-[calc(100%-1.5rem)] min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-3xl",
+          "fixed inset-y-3 left-3 md:static md:m-3 md:mr-0",
+          open ? "translate-x-0" : "-translate-x-[calc(100%+1.5rem)]",
+          "md:translate-x-0",
+        )}
+      >
             <div className="flex items-center gap-2 border-b border-white/45 px-3 py-3 dark:border-white/10">
               <FidelityLogo variant="full" className="h-9 w-auto sm:h-10" alt="Fidelity International" />
               <div className="ml-auto flex items-center gap-1">
@@ -416,9 +406,7 @@ export default function Sidebar({
                 </button>
               </SettingsPopover>
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+      </aside>
 
       <CreateFolderModal
         isOpen={showCreateFolderModal}

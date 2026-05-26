@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   ArrowLeft,
   ChevronDown,
@@ -15,7 +15,7 @@ import {
   Target,
 } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
-import { INITIAL_KNOWLEDGE_BASES } from "./mockKnowledgeBases"
+import { getAllKnowledgeBases } from "./mockKnowledgeBases"
 import {
   PAGE_SIZE_OPTIONS,
   primaryBtn,
@@ -38,7 +38,14 @@ function KnowledgeBaseIcon() {
 export default function LibraryPage({ embedded = false }) {
   const { t } = useLocale()
   const router = useRouter()
-  const [items, setItems] = useState(INITIAL_KNOWLEDGE_BASES)
+  const pathname = usePathname()
+  const [items, setItems] = useState(() => getAllKnowledgeBases())
+
+  useEffect(() => {
+    if (pathname === "/library") {
+      setItems(getAllKnowledgeBases())
+    }
+  }, [pathname])
   const [searchQuery, setSearchQuery] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -123,7 +130,11 @@ export default function LibraryPage({ embedded = false }) {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={cls("inline-flex items-center gap-1.5", primaryBtn)}>
+            <button
+              type="button"
+              onClick={() => router.push("/library/create")}
+              className={cls("inline-flex items-center gap-1.5", primaryBtn)}
+            >
               <Plus className="h-4 w-4" strokeWidth={2} />
               {t("kbCreate")}
             </button>

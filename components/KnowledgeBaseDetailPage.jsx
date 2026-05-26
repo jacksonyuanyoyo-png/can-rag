@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
   ChevronDown,
   ChevronLeft,
@@ -42,6 +42,7 @@ function FileIcon() {
 
 export default function KnowledgeBaseDetailPage({ embedded = false }) {
   const { t, locale } = useLocale()
+  const router = useRouter()
   const params = useParams()
   const kbId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : ""
 
@@ -210,7 +211,11 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             <button type="button" className={cls("px-4 py-2", surfaceBtn)}>
               {t("kbDetailBatch")}
             </button>
-            <button type="button" className={cls("inline-flex items-center gap-1.5", primaryBtn)}>
+            <button
+              type="button"
+              onClick={() => router.push(`/library/${kbId}/import`)}
+              className={cls("inline-flex items-center gap-1.5", primaryBtn)}
+            >
               <Plus className="h-4 w-4" strokeWidth={2} />
               {t("kbDetailImport")}
             </button>

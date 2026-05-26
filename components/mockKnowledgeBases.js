@@ -1,6 +1,13 @@
+import { makeId } from "./utils"
+
 /** @typedef {"team" | "personal"} KnowledgeBaseResourceType */
 
-/** @type {Array<{ id: string, name: string, description: string, fileCount: number, resourceType: KnowledgeBaseResourceType, updatedAt: string }>} */
+/** @typedef {{ id: string, name: string, description: string, fileCount: number, resourceType: KnowledgeBaseResourceType, updatedAt: string }} KnowledgeBaseRecord */
+
+/** @type {KnowledgeBaseRecord[]} */
+export const dynamicKnowledgeBases = []
+
+/** @type {KnowledgeBaseRecord[]} */
 export const INITIAL_KNOWLEDGE_BASES = [
   {
     id: "3db6b023-e59c-48bf-a12b-9c8e7f654321",
@@ -29,6 +36,30 @@ export const INITIAL_KNOWLEDGE_BASES = [
   },
 ]
 
+/**
+ * @returns {KnowledgeBaseRecord[]}
+ */
+export function getAllKnowledgeBases() {
+  return [...INITIAL_KNOWLEDGE_BASES, ...dynamicKnowledgeBases]
+}
+
+/**
+ * @param {{ id?: string, name: string, description?: string }} kb
+ * @returns {KnowledgeBaseRecord}
+ */
+export function addKnowledgeBase(kb) {
+  const record = {
+    id: kb.id ?? makeId("kb-"),
+    name: kb.name,
+    description: kb.description ?? "",
+    fileCount: 0,
+    resourceType: "personal",
+    updatedAt: new Date().toISOString(),
+  }
+  dynamicKnowledgeBases.push(record)
+  return record
+}
+
 export function getKnowledgeBaseById(id) {
-  return INITIAL_KNOWLEDGE_BASES.find((kb) => kb.id === id) ?? null
+  return getAllKnowledgeBases().find((kb) => kb.id === id) ?? null
 }
