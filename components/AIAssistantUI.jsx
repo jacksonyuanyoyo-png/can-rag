@@ -254,7 +254,7 @@ export default function AIAssistantUI() {
   if (!mounted) {
     return (
       <div className="apple-surface flex h-dvh w-full items-center justify-center text-gray-900 dark:text-slate-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--fi-primary)]"></div>
       </div>
     )
   }
@@ -264,7 +264,7 @@ export default function AIAssistantUI() {
       <div className="glass-panel z-40 m-2 flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2 md:hidden">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="inline-flex items-center justify-center rounded-full p-2 hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          className="theme-focus-ring inline-flex items-center justify-center rounded-full p-2 hover:bg-white/55"
           aria-label={t("openSidebar")}
         >
           <Menu className="h-5 w-5" />
@@ -279,7 +279,7 @@ export default function AIAssistantUI() {
           <Link
             href="/library"
             className={cls(
-              "glass-pill hidden rounded-full p-2 transition hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:inline-flex dark:text-slate-200",
+              "theme-focus-ring glass-pill hidden rounded-full p-2 transition hover:scale-[1.02] md:inline-flex dark:text-slate-200",
               isLibrary ? "bg-white/70 text-gray-900" : "text-gray-700",
             )}
             aria-label={t("knowledgeBaseSection")}

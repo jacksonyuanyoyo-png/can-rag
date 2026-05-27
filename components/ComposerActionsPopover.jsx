@@ -27,7 +27,7 @@ export default function ComposerActionsPopover({ children }) {
       { icon: Palette, labelKey: "canvas", action: () => {} },
       {
         icon: () => (
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-blue-500 via-green-400 to-yellow-400">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-[var(--fi-primary)] via-cyan-400 to-amber-300">
             <div className="h-2.5 w-2.5 rounded-sm bg-white" />
           </div>
         ),
@@ -37,7 +37,7 @@ export default function ComposerActionsPopover({ children }) {
       },
       {
         icon: () => (
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-[var(--fi-primary)]">
             <div className="h-2.5 w-2.5 rounded-sm bg-white" />
           </div>
         ),
@@ -88,7 +88,7 @@ export default function ComposerActionsPopover({ children }) {
             )}
             <span>{t(action.labelKey)}</span>
             {action.badgeKey && (
-              <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+              <span className="ml-auto rounded-full bg-[color:color-mix(in_srgb,var(--fi-primary)_14%,white)] px-2 py-0.5 text-xs font-medium text-[var(--fi-primary)] dark:bg-[color:color-mix(in_srgb,var(--fi-primary)_25%,transparent)] dark:text-slate-200">
                 {t(action.badgeKey)}
               </span>
             )}

@@ -57,8 +57,8 @@ export default function ConversationRow({ data, active, onSelect, onTogglePin, o
         className={cls(
           "flex w-full items-center gap-1 rounded-2xl px-4 py-2 transition",
           active
-            ? "bg-white/70 text-zinc-950 shadow-sm dark:bg-white/12 dark:text-zinc-100"
-            : "hover:bg-white/55 dark:hover:bg-white/10",
+            ? "bg-[#eef0ff] text-[var(--fi-primary)] shadow-sm"
+            : "hover:bg-white/70",
         )}
       >
         <button
@@ -69,12 +69,12 @@ export default function ConversationRow({ data, active, onSelect, onTogglePin, o
         >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              {data.pinned && <Pin className="h-3 w-3 shrink-0 text-zinc-500 dark:text-zinc-400" />}
+              {data.pinned && <Pin className="h-3 w-3 shrink-0 text-slate-500" />}
               <span className="truncate text-sm font-medium tracking-tight">{data.title}</span>
-              <span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">{formatTimeAgo(data.updatedAt)}</span>
+              <span className="shrink-0 text-[11px] text-slate-500">{formatTimeAgo(data.updatedAt)}</span>
             </div>
             {showMeta && (
-              <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">{t("messagesCount", { count })}</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">{t("messagesCount", { count })}</div>
             )}
           </div>
         </button>
@@ -86,7 +86,7 @@ export default function ConversationRow({ data, active, onSelect, onTogglePin, o
               e.stopPropagation()
               setShowMenu(!showMenu)
             }}
-            className="rounded-full p-1 text-zinc-500 opacity-0 transition group-hover:opacity-100 hover:bg-white/70 dark:text-zinc-300 dark:hover:bg-white/10"
+            className="rounded-full p-1 text-zinc-500 opacity-0 transition group-hover:opacity-100 hover:bg-white"
             aria-label={t("chatOptions")}
           >
             <MoreHorizontal className="h-4 w-4" />
@@ -130,7 +130,7 @@ export default function ConversationRow({ data, active, onSelect, onTogglePin, o
         </div>
       </div>
 
-      <div className="glass-panel pointer-events-none absolute left-[calc(100%+6px)] top-1 hidden w-64 rounded-2xl p-3 text-xs text-zinc-700 dark:text-zinc-200 md:group-hover:block">
+      <div className="pointer-events-none absolute left-[calc(100%+6px)] top-1 hidden w-64 rounded-2xl border border-slate-200 bg-white p-3 text-xs text-zinc-700 shadow-md md:group-hover:block">
         <div className="line-clamp-6 whitespace-pre-wrap">{data.preview}</div>
       </div>
     </div>

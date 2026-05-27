@@ -14,7 +14,6 @@ import SidebarSection from "./SidebarSection"
 import ConversationRow from "./ConversationRow"
 import FolderRow from "./FolderRow"
 import TemplateRow from "./TemplateRow"
-import FidelityLogo from "./FidelityLogo"
 import CreateFolderModal from "./CreateFolderModal"
 import CreateTemplateModal from "./CreateTemplateModal"
 import SearchModal from "./SearchModal"
@@ -140,7 +139,7 @@ export default function Sidebar({
         <div className="flex items-center justify-center border-b border-white/45 px-3 py-3 dark:border-white/10">
           <button
             onClick={() => setSidebarCollapsed(false)}
-            className="rounded-full p-2 hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:bg-white/10"
+            className="theme-focus-ring rounded-full p-2 hover:bg-white/55 dark:hover:bg-white/10"
             aria-label={t("expandSidebar")}
             title={t("expandSidebar")}
           >
@@ -151,7 +150,7 @@ export default function Sidebar({
         <div className="flex flex-1 flex-col items-center gap-2 pt-4">
           <button
             onClick={handleNewChatClick}
-            className="rounded-full p-2.5 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:bg-white/10"
+            className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
             title={t("newChat")}
           >
             <Plus className="h-5 w-5" />
@@ -159,7 +158,7 @@ export default function Sidebar({
 
           <button
             onClick={handleSearchClick}
-            className="rounded-full p-2.5 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:bg-white/10"
+            className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
             title={t("searchChats")}
           >
             <SearchIcon className="h-5 w-5" />
@@ -168,7 +167,7 @@ export default function Sidebar({
           <button
             onClick={onOpenLibrary}
             className={cls(
-              "rounded-full p-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+              "theme-focus-ring rounded-full p-2.5 transition-colors",
               libraryActive
                 ? "bg-white/70 dark:bg-white/15"
                 : "hover:bg-white/55 dark:hover:bg-white/10",
@@ -180,7 +179,7 @@ export default function Sidebar({
 
           <button
             onClick={handleFoldersClick}
-            className="rounded-full p-2.5 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:bg-white/10"
+            className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
             title={t("folders")}
           >
             <FolderIcon className="h-5 w-5" />
@@ -190,7 +189,7 @@ export default function Sidebar({
         <div className="mt-auto flex flex-col items-center gap-2 pb-4">
           <SettingsPopover>
             <button
-              className="rounded-full p-2.5 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:bg-white/10"
+              className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
               title={t("settings")}
             >
               <Settings className="h-5 w-5" />
@@ -224,18 +223,22 @@ export default function Sidebar({
 
       <aside
         className={cls(
-          "glass-panel z-50 flex h-[calc(100%-1.5rem)] min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-3xl",
+          "z-50 flex h-[calc(100%-1.5rem)] min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-[#f6f7fb] shadow-[0_12px_35px_rgba(15,23,42,0.07)]",
           "fixed inset-y-3 left-3 md:static md:m-3 md:mr-0",
           open ? "translate-x-0" : "-translate-x-[calc(100%+1.5rem)]",
           "md:translate-x-0",
         )}
       >
-            <div className="flex items-center gap-2 border-b border-white/45 px-3 py-3 dark:border-white/10">
-              <FidelityLogo variant="full" className="h-9 w-auto sm:h-10" alt="Fidelity International" />
-              <div className="ml-auto flex items-center gap-1">
+            <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-4">
+              <div className="min-w-0 select-none text-lg font-semibold leading-tight tracking-wide text-slate-900">
+                <span className="text-[var(--fi-primary)]">FIC</span>
+                <span className="text-slate-800">-INVESTLY </span>
+                <span className="text-[var(--fi-primary)]">AI</span>
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-1">
                 <button
                   onClick={() => setSidebarCollapsed(true)}
-                  className="hidden rounded-full p-2 text-zinc-600 transition-colors hover:bg-white/55 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:block dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="theme-focus-ring hidden rounded-full p-2 text-zinc-600 transition-colors hover:bg-white/55 hover:text-zinc-900 md:block dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                   aria-label={t("collapseSidebar")}
                   title={t("collapseSidebar")}
                 >
@@ -244,7 +247,7 @@ export default function Sidebar({
 
                 <button
                   onClick={onClose}
-                  className="rounded-full p-2 hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:hidden dark:hover:bg-white/10"
+                  className="theme-focus-ring rounded-full p-2 hover:bg-white/55 md:hidden dark:hover:bg-white/10"
                   aria-label={t("closeSidebar")}
                 >
                   <PanelLeftClose className="h-5 w-5" />
@@ -257,7 +260,7 @@ export default function Sidebar({
                 {t("searchConversations")}
               </label>
               <div className="relative">
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   id="search"
                   ref={searchRef}
@@ -267,7 +270,7 @@ export default function Sidebar({
                   placeholder={t("searchPlaceholder")}
                   onClick={() => setShowSearchModal(true)}
                   onFocus={() => setShowSearchModal(true)}
-                  className="w-full rounded-2xl border border-white/55 bg-white/55 py-2 pl-9 pr-3 text-sm outline-none ring-0 placeholder:text-gray-400 shadow-inner backdrop-blur-xl focus:border-white/80 focus:ring-2 focus:ring-black/10 dark:border-white/10 dark:bg-white/10 dark:text-slate-50 dark:focus:ring-white/15"
+                  className="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none ring-0 placeholder:text-slate-400 focus:border-[color:color-mix(in_srgb,var(--fi-primary)_35%,white)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--fi-primary)_20%,transparent)]"
                 />
               </div>
             </div>
@@ -275,22 +278,22 @@ export default function Sidebar({
             <div className="px-3 pt-3">
               <button
                 onClick={createNewChat}
-                className="flex w-full items-center justify-start gap-2 rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:scale-[1.01] hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                className="theme-btn-primary theme-focus-ring flex w-full items-center justify-start gap-2 px-4 py-2 transition hover:scale-[1.01]"
                 title={t("newChatShortcut")}
               >
                 <Plus className="h-4 w-4 shrink-0" /> {t("newChat")}
               </button>
             </div>
 
-            <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-4">
+            <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-4">
               <button
                 type="button"
                 onClick={onOpenLibrary}
                 className={cls(
-                  "sticky top-0 z-10 mb-1 flex w-full items-center justify-start gap-2 rounded-2xl border-y border-transparent px-4 py-2 text-left text-sm font-medium backdrop-blur-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                  "theme-focus-ring sticky top-0 z-10 mb-1 flex w-full items-center justify-start gap-2 rounded-2xl border-y border-transparent px-4 py-2 text-left text-sm font-medium transition-colors",
                   libraryActive
-                    ? "bg-white/60 text-zinc-900 dark:bg-white/10 dark:text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200",
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-slate-500 hover:bg-white/70 hover:text-slate-800",
                 )}
                 aria-current={libraryActive ? "page" : undefined}
               >
@@ -332,7 +335,7 @@ export default function Sidebar({
                   <button
                     type="button"
                     onClick={() => setShowCreateFolderModal(true)}
-                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-gray-600 transition hover:bg-white/55 dark:text-slate-300 dark:hover:bg-white/10"
+                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
                   >
                     <Plus className="h-4 w-4 shrink-0" /> {t("createFolder")}
                   </button>
@@ -364,7 +367,7 @@ export default function Sidebar({
                   <button
                     type="button"
                     onClick={() => setShowCreateTemplateModal(true)}
-                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-gray-600 transition hover:bg-white/55 dark:text-slate-300 dark:hover:bg-white/10"
+                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
                   >
                     <Plus className="h-4 w-4 shrink-0" /> {t("createTemplate")}
                   </button>
@@ -389,11 +392,11 @@ export default function Sidebar({
               </SidebarSection>
             </nav>
 
-            <div className="mt-auto shrink-0 border-t border-white/45 px-3 py-3 dark:border-white/10">
+            <div className="mt-auto shrink-0 border-t border-slate-200 px-3 py-3">
               <SettingsPopover>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-2xl bg-white/45 p-2 text-left shadow-inner transition-colors hover:bg-white/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:bg-white/10 dark:hover:bg-white/15"
+                  className="theme-focus-ring flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 text-left transition-colors hover:bg-slate-50"
                 >
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1D1D1B] text-xs font-semibold text-white">
                     FI

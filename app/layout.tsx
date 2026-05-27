@@ -6,7 +6,7 @@ import './globals.css'
 const localeBootstrapScript = `try{var l=localStorage.getItem("locale");if(l==="en"||l==="zh"){document.documentElement.dataset.locale=l;document.documentElement.lang=l==="en"?"en":"zh-CN"}}catch(e){}`
 
 export const metadata: Metadata = {
-  title: 'fic-investly AI',
+  title: 'FIC-INVESTLY AI',
   description: 'Fidelity International AI assistant and knowledge base workspace.',
   icons: {
     icon: [{ url: '/brand/fidelity-mark.svg', type: 'image/svg+xml' }],

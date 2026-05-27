@@ -7,7 +7,7 @@ export default function SidebarSection({ icon, title, children, collapsed, onTog
       <button
         type="button"
         onClick={onToggle}
-        className="sticky top-0 z-10 mb-1 flex w-full items-center justify-start gap-2 rounded-2xl border-y border-transparent px-4 py-2 text-left text-sm font-medium text-zinc-500 backdrop-blur-xl transition-colors hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:hover:text-zinc-200"
+        className="theme-focus-ring sticky top-0 z-10 mb-1 flex w-full items-center justify-start gap-2 rounded-2xl border-y border-transparent px-4 py-2 text-left text-sm font-medium text-zinc-500 transition-colors hover:bg-white/70 hover:text-zinc-800"
         aria-expanded={!collapsed}
       >
         {icon}

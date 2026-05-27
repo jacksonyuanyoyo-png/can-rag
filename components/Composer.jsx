@@ -95,8 +95,12 @@ const Composer = forwardRef(function Composer(
   const revealProps = useLandingReveal ? { variants: landingRevealItem } : {}
 
   const pillClass = cls(
-    "glass-pill mx-auto flex w-full flex-col transition-all duration-200",
-    landing ? "max-w-[620px] rounded-[2rem]" : "max-w-3xl rounded-[1.35rem]",
+    "mx-auto flex w-full flex-col transition-all duration-200",
+    landing
+      ? cls("glass-pill max-w-[620px] rounded-[1.75rem]")
+      : cls(
+          "max-w-3xl rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.07)]",
+        ),
   )
 
   const shell = (
@@ -110,7 +114,7 @@ const Composer = forwardRef(function Composer(
             placeholder={t("composerPlaceholder")}
             rows={1}
             className={cls(
-              "w-full resize-none bg-transparent text-sm outline-none placeholder:text-zinc-400 transition-all duration-200 dark:placeholder:text-slate-500",
+              "w-full resize-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 transition-all duration-200 dark:text-slate-100 dark:placeholder:text-slate-500",
               "min-h-[24px] text-left leading-6",
             )}
             onKeyDown={(e) => {
@@ -126,7 +130,7 @@ const Composer = forwardRef(function Composer(
           <div className="flex items-center gap-1">
             <ComposerActionsPopover>
               <button
-                className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-gray-500 transition-colors hover:bg-white/65 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-300"
+                className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-300"
                 title={t("addAttachment")}
               >
                 <Plus className="h-5 w-5" />
@@ -137,7 +141,7 @@ const Composer = forwardRef(function Composer(
 
           <div className="flex shrink-0 items-center gap-1">
             <button
-              className="inline-flex items-center justify-center rounded-full p-2 text-gray-400 transition-colors hover:bg-white/65 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-slate-300"
+              className="inline-flex items-center justify-center rounded-full p-2 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-300"
               title={t("voiceInput")}
             >
               <Mic className="h-5 w-5" />
@@ -148,8 +152,8 @@ const Composer = forwardRef(function Composer(
               className={cls(
                 "inline-flex shrink-0 items-center justify-center rounded-full p-2.5 transition-colors",
                 hasContent
-                  ? "bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                  : "cursor-not-allowed bg-black/8 text-gray-400 dark:bg-white/10 dark:text-slate-500",
+                  ? "bg-[var(--fi-primary)] text-white hover:bg-[var(--fi-primary-hover)] dark:bg-[var(--fi-primary)] dark:text-white dark:hover:bg-[var(--fi-primary-hover)]"
+                  : "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/10 dark:text-slate-500",
               )}
             >
               {sending || busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -171,7 +175,7 @@ const Composer = forwardRef(function Composer(
   )
 
   return (
-    <div className={cls("shrink-0 p-4", landing ? "w-full border-0" : "border-t border-white/50 dark:border-white/10")}>
+    <div className={cls("shrink-0 p-4", landing ? "w-full border-0" : "border-0 bg-transparent")}>
       {useLandingReveal ? (
         <motion.div
           variants={landingRevealContainer}

@@ -33,15 +33,15 @@ export default function ModelSelector({ selectedModel, onSelect, compact = false
         type="button"
         onClick={() => setOpen(!open)}
         className={cls(
-          "inline-flex items-center gap-1.5 rounded-full transition-colors hover:bg-white/65 dark:hover:bg-white/10",
+          "inline-flex items-center gap-1.5 rounded-full transition-colors hover:bg-white/70 dark:hover:bg-white/10",
           compact ? "px-2 py-1.5" : "px-2.5 py-1.5",
         )}
         aria-label={t("selectModel")}
         title={current.name}
       >
         <img src={current.icon} alt="" className="h-5 w-5 shrink-0 rounded-full object-contain" draggable={false} />
-        {!compact && <span className="max-w-[120px] truncate text-xs font-medium text-gray-600 dark:text-slate-300">{current.name}</span>}
-        <ChevronDown className={cls("h-3.5 w-3.5 text-gray-400 transition-transform", open && "rotate-180")} />
+        {!compact && <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 dark:text-slate-300">{current.name}</span>}
+        <ChevronDown className={cls("h-3.5 w-3.5 text-slate-400 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
@@ -56,12 +56,15 @@ export default function ModelSelector({ selectedModel, onSelect, compact = false
               }}
               className={cls(
                 "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-white/55 dark:hover:bg-white/10",
-                model.id === selectedModel && "bg-white/30 dark:bg-white/5",
+                model.id === selectedModel &&
+                  "bg-[color:color-mix(in_srgb,var(--fi-primary)_12%,white)] text-[var(--fi-primary)] dark:bg-[color:color-mix(in_srgb,var(--fi-primary)_24%,transparent)] dark:text-slate-100",
               )}
             >
               <img src={model.icon} alt="" className="h-5 w-5 shrink-0 rounded-full object-contain" draggable={false} />
               <span className="flex-1 truncate">{model.name}</span>
-              {model.id === selectedModel && <Check className="h-3.5 w-3.5 shrink-0 text-blue-600" />}
+              {model.id === selectedModel && (
+                <Check className="h-3.5 w-3.5 shrink-0 text-[var(--fi-primary)] dark:text-slate-200" />
+              )}
             </button>
           ))}
         </div>

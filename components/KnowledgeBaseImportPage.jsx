@@ -6,7 +6,22 @@ import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Check } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
 import { getKnowledgeBaseById } from "./mockKnowledgeBases"
-import { libraryEmbeddedShell, primaryBtn, surfaceBtn } from "./libraryUi"
+import {
+  libraryEmbeddedShell,
+  libraryPageRoot,
+  libraryPageRootStandalone,
+  libraryFormCard,
+  librarySectionAccent,
+  libraryStepActive,
+  libraryStepInactive,
+  libraryDropZone,
+  libraryDropZoneActive,
+  libraryChunkRadio,
+  libraryChunkRadioChecked,
+  libraryLink,
+  primaryBtn,
+  surfaceBtn,
+} from "./libraryUi"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cls } from "./utils"
 
@@ -15,7 +30,7 @@ const FORM_GRID =
 
 /** 与工程主色一致，覆盖 ui/checkbox 默认 primary 蓝色 */
 const SURFACE_CHECKBOX =
-  "border-white/55 bg-white/55 shadow-inner data-[state=checked]:border-gray-950 data-[state=checked]:bg-gray-950 data-[state=checked]:text-white focus-visible:ring-black/20"
+  "border-slate-200 bg-white shadow-sm data-[state=checked]:border-[var(--fi-primary)] data-[state=checked]:bg-[var(--fi-primary)] data-[state=checked]:text-white focus-visible:ring-[color:color-mix(in_srgb,var(--fi-primary)_35%,transparent)]"
 
 function StepIndicator({ step, label, active, completed }) {
   return (
@@ -23,9 +38,7 @@ function StepIndicator({ step, label, active, completed }) {
       <span
         className={cls(
           "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold",
-          active || completed
-            ? "bg-gray-950 text-white shadow-sm"
-            : "border border-white/55 bg-white/55 text-gray-400 shadow-inner backdrop-blur-xl",
+          active || completed ? libraryStepActive : libraryStepInactive,
         )}
       >
         {completed ? <Check className="h-4 w-4" strokeWidth={2} /> : step}
@@ -33,7 +46,7 @@ function StepIndicator({ step, label, active, completed }) {
       <span
         className={cls(
           "truncate text-sm font-medium",
-          active || completed ? "text-gray-950" : "text-gray-400",
+          active || completed ? "text-slate-800" : "text-slate-400",
         )}
       >
         {label}
@@ -45,8 +58,8 @@ function StepIndicator({ step, label, active, completed }) {
 function SectionTitle({ children, badge }) {
   return (
     <div className="col-span-full mb-1 flex flex-wrap items-center gap-2 sm:mb-2">
-      <span className="h-4 w-1 shrink-0 rounded-sm bg-gray-950" aria-hidden />
-      <h2 className="text-sm font-semibold tracking-tight text-gray-950">{children}</h2>
+      <span className={librarySectionAccent} aria-hidden />
+      <h2 className="text-sm font-semibold tracking-tight text-slate-800">{children}</h2>
       {badge}
     </div>
   )
@@ -56,7 +69,7 @@ function FormLabel({ children, required, htmlFor }) {
   return (
     <div
       className={cls(
-        "text-sm font-medium leading-snug text-gray-950 sm:pt-0.5",
+        "text-sm font-medium leading-snug text-slate-800 sm:pt-0.5",
         htmlFor && "sm:min-h-[2.625rem] sm:flex sm:items-center",
       )}
     >
@@ -89,22 +102,20 @@ function ChunkRadio({ id, name, label, description, checked, onChange }) {
       htmlFor={id}
       className={cls(
         "flex min-w-[8.5rem] flex-1 cursor-pointer gap-2.5 rounded-2xl border p-3 transition-colors",
-        checked
-          ? "border-gray-950/25 bg-white/55 shadow-inner"
-          : "border-white/55 bg-white/25 hover:bg-white/40",
+        checked ? libraryChunkRadioChecked : libraryChunkRadio,
       )}
     >
       <input
         id={id}
         type="radio"
         name={name}
-        className="mt-1 h-4 w-4 shrink-0 accent-gray-950"
+        className="mt-1 h-4 w-4 shrink-0 accent-[var(--fi-primary)]"
         checked={checked}
         onChange={onChange}
       />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-gray-950">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">{description}</span>
+        <span className="block text-sm font-medium text-slate-800">{label}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
       </span>
     </label>
   )
@@ -187,12 +198,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
       <div
         className={cls(
           embedded
-            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-gray-950"
-            : "apple-surface flex h-dvh flex-col items-center justify-center text-gray-950",
+            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-slate-800"
+            : "apple-surface flex h-dvh flex-col items-center justify-center text-slate-800",
         )}
       >
-        <p className="text-sm text-gray-500">{t("kbImportNotFound")}</p>
-        <Link href="/library" className="mt-4 text-sm text-gray-700 underline hover:text-gray-950">
+        <p className="text-sm text-slate-500">{t("kbImportNotFound")}</p>
+        <Link href="/library" className={cls("mt-4 text-sm", libraryLink)}>
           {t("kbBackToList")}
         </Link>
       </div>
@@ -200,13 +211,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   }
 
   return (
-    <div
-      className={cls(
-        embedded
-          ? "flex min-h-0 flex-1 flex-col overflow-hidden text-gray-950"
-          : "apple-surface flex h-dvh w-full flex-col overflow-hidden text-gray-950",
-      )}
-    >
+    <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
       <div
         className={cls(
           libraryEmbeddedShell,
@@ -218,12 +223,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
             <div className="flex min-w-0 items-center gap-2">
               <Link
                 href={`/library/${kbId}`}
-                className="shrink-0 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-white/55 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="theme-focus-ring shrink-0 rounded-full p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-[var(--fi-primary)]"
                 aria-label={t("kbBackToList")}
               >
                 <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
               </Link>
-              <h1 className="min-w-0 text-lg font-semibold tracking-tight text-gray-950 sm:text-xl">
+              <h1 className="min-w-0 text-lg font-semibold tracking-tight text-slate-800 sm:text-xl">
                 {t("kbImportTitle")}
               </h1>
             </div>
@@ -238,12 +243,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 completed
                 active={false}
               />
-              <div className="h-px w-6 shrink-0 bg-gray-200 sm:w-10" aria-hidden />
+              <div className="h-px w-6 shrink-0 bg-slate-200 sm:w-10" aria-hidden />
               <StepIndicator step={2} label={t("kbImportStepActive")} active completed={false} />
             </nav>
           </header>
 
-          <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
+          <form className={cls(libraryFormCard, "space-y-10")} onSubmit={(e) => e.preventDefault()}>
             {/* 上传区域 */}
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportUploadSection")}</SectionTitle>
@@ -261,10 +266,8 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
               />
               <div
                 className={cls(
-                  "flex min-w-0 flex-1 flex-col items-center justify-center rounded-3xl border border-dashed bg-white/30 px-4 py-8 text-center shadow-inner transition-colors",
-                  dragActive
-                    ? "border-gray-950/40 bg-white/50"
-                    : "border-white/60",
+                  libraryDropZone,
+                  dragActive && libraryDropZoneActive,
                 )}
                 onDragEnter={onDropZoneDragEnter}
                 onDragLeave={onDropZoneDragLeave}
@@ -272,13 +275,13 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 onDrop={onDropZoneDrop}
               >
                 <p
-                  className="cursor-pointer text-sm font-medium text-gray-950 hover:underline"
+                  className="theme-link cursor-pointer text-sm font-medium"
                   onClick={openFilePicker}
                 >
                   {t("kbImportUploadHint")}
                 </p>
                 <p
-                  className="mt-1 max-w-md cursor-pointer text-xs leading-relaxed text-gray-500 hover:text-gray-700"
+                  className="mt-1 max-w-md cursor-pointer text-xs leading-relaxed text-slate-500 hover:text-slate-700"
                   onClick={openFilePicker}
                 >
                   {t("kbImportUploadFormats")}
@@ -304,7 +307,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-xs font-medium text-gray-700">
+                      <p className="text-xs font-medium text-slate-700">
                         {t("kbImportUploadSelected", { count: pickedFiles.length })}
                       </p>
                       <button
@@ -313,12 +316,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                           e.stopPropagation()
                           setPickedFiles([])
                         }}
-                        className="text-xs text-gray-500 underline hover:text-gray-950"
+                        className="text-xs text-slate-500 underline hover:text-[var(--fi-primary)]"
                       >
                         {t("kbImportUploadClear")}
                       </button>
                     </div>
-                    <ul className="max-h-28 overflow-y-auto rounded-xl border border-white/50 bg-white/40 px-2 py-1.5 text-xs text-gray-700">
+                    <ul className="max-h-28 overflow-y-auto rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
                       {pickedFiles.map((f) => (
                         <li key={`${f.name}-${f.size}-${f.lastModified}`} className="truncate py-0.5">
                           {f.name}
@@ -327,7 +330,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     </ul>
                   </div>
                 ) : null}
-                <p className="mt-3 text-[11px] text-gray-400">{t("kbImportUploadLimit")}</p>
+                <p className="mt-3 text-[11px] text-slate-400">{t("kbImportUploadLimit")}</p>
               </div>
             </section>
 
@@ -379,7 +382,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                   <FormLabel>{t("kbImportChunkMeta")}</FormLabel>
                   <div className="flex flex-wrap gap-4">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-950">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
                       <Checkbox
                         className={SURFACE_CHECKBOX}
                         checked={metaFilename}
@@ -387,7 +390,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                       />
                       {t("kbImportChunkMetaFilename")}
                     </label>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-950">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
                       <Checkbox
                         className={SURFACE_CHECKBOX}
                         checked={metaHeadings}

@@ -1,0 +1,95 @@
+:root {
+  --fi-primary: #4f46e5;
+  --fi-primary-hover: #6366f1;
+  --fi-primary-soft: color-mix(in srgb, var(--fi-primary) 10%, white);
+  --fi-text-strong: #1e293b;
+  --fi-text: #334155;
+  --fi-text-muted: #64748b;
+  --fi-border: #e2e8f0;
+  --fi-border-soft: #f1f5f9;
+  --fi-surface: #ffffff;
+  --fi-surface-muted: #f8fafc;
+}
+
+@layer utilities {
+  .theme-focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2;
+    --tw-ring-color: color-mix(in srgb, var(--fi-primary) 35%, transparent);
+  }
+
+  .theme-link {
+    color: var(--fi-primary);
+    transition: color 0.2s ease;
+  }
+
+  .theme-link:hover {
+    color: var(--fi-primary-hover);
+    text-decoration: underline;
+  }
+
+  .theme-btn-primary {
+    @apply rounded-2xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition;
+    background: var(--fi-primary);
+  }
+
+  .theme-btn-primary:hover {
+    background: var(--fi-primary-hover);
+  }
+
+  .theme-btn-surface {
+    @apply rounded-2xl border bg-white text-sm font-medium shadow-sm transition;
+    border-color: var(--fi-border);
+    color: var(--fi-text);
+  }
+
+  .theme-btn-surface:hover {
+    background: var(--fi-surface-muted);
+  }
+
+  .theme-input {
+    @apply rounded-2xl border bg-white py-2.5 text-sm shadow-sm outline-none placeholder:text-slate-400 focus:ring-2;
+    border-color: var(--fi-border);
+    color: var(--fi-text-strong);
+    --tw-ring-color: color-mix(in srgb, var(--fi-primary) 20%, transparent);
+  }
+
+  .theme-input:focus {
+    border-color: color-mix(in srgb, var(--fi-primary) 50%, white);
+  }
+
+  .theme-card {
+    @apply rounded-3xl border bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)];
+    border-color: color-mix(in srgb, var(--fi-border) 85%, white);
+  }
+
+  .theme-accent-bar {
+    width: 0.25rem;
+    height: 1rem;
+    border-radius: 0.125rem;
+    background: var(--fi-primary);
+  }
+
+  .theme-text-primary {
+    color: var(--fi-primary);
+  }
+
+  .theme-bg-primary {
+    background: var(--fi-primary);
+  }
+
+  .theme-bg-primary-soft {
+    background: var(--fi-primary-soft);
+  }
+
+  .theme-border-primary-30 {
+    border-color: color-mix(in srgb, var(--fi-primary) 30%, white);
+  }
+
+  .theme-border-primary-40 {
+    border-color: color-mix(in srgb, var(--fi-primary) 40%, white);
+  }
+
+  .theme-border-primary-50 {
+    border-color: color-mix(in srgb, var(--fi-primary) 50%, white);
+  }
+}

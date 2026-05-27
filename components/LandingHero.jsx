@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import FidelityLogo from "./FidelityLogo"
 import Composer from "./Composer"
 import { useTypewriter, TypewriterLine } from "./TypewriterText"
 import { useLocale } from "./LocaleProvider"
@@ -51,22 +50,20 @@ export default function LandingHero({ composerRef, selectedModel, onModelChange,
 
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-[8vh] sm:px-8">
-      <div className="flex w-full max-w-3xl items-center justify-center gap-3 sm:gap-4">
-        <motion.div
-          initial={skipAnimation ? false : { opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
+      <div className="flex w-full max-w-3xl items-center justify-center">
+        <motion.h1
+          className="text-center text-3xl font-semibold tracking-tight text-slate-800 sm:text-4xl md:text-5xl dark:text-white"
+          initial={skipAnimation ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: skipAnimation ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          <FidelityLogo variant="mark" className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" alt="Fidelity" />
-        </motion.div>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl md:text-5xl dark:text-white">
-          <span className="inline-block min-h-[1.15em] text-left">
+          <span className="inline-block min-h-[1.15em]">
             <TypewriterLine text={titleText} displayed={title.displayed} typing={typingTitle} />
           </span>
-        </h1>
+        </motion.h1>
       </div>
 
-      <p className="mx-auto mt-3 flex min-h-[1.5rem] w-full max-w-xl justify-center text-sm leading-6 text-zinc-500 dark:text-slate-400">
+      <p className="mx-auto mt-3 flex min-h-[1.5rem] w-full max-w-xl justify-center text-sm leading-6 text-slate-500 dark:text-slate-400">
         <span className="inline-block min-h-[1.5rem] text-left">
           <TypewriterLine text={subtitleText} displayed={subtitle.displayed} typing={typingSubtitle} />
         </span>

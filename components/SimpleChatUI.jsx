@@ -24,7 +24,7 @@ export default function SimpleChatUI() {
     return (
       <div className="h-screen w-full bg-white">
         <div className="flex h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--fi-primary)]"></div>
         </div>
       </div>
     )
@@ -50,7 +50,7 @@ export default function SimpleChatUI() {
                 <div
                   className={`max-w-sm rounded-lg px-4 py-2 ${
                     msg.role === "user"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[var(--fi-primary)] text-white"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >
@@ -84,7 +84,7 @@ export default function SimpleChatUI() {
           )}
 
           {/* Input Field */}
-          <div className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 hover:border-gray-400 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+          <div className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 hover:border-gray-400 focus-within:border-[var(--fi-primary)] focus-within:ring-2 focus-within:ring-[color:color-mix(in_srgb,var(--fi-primary)_20%,transparent)]">
             <Plus className="h-5 w-5 text-gray-600" />
             <input
               ref={inputRef}

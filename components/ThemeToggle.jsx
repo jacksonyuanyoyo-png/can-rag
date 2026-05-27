@@ -11,7 +11,7 @@ export default function ThemeToggle({ theme, setTheme }) {
   if (!mounted) {
     return (
       <button
-        className="glass-pill inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+        className="theme-focus-ring glass-pill inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm"
         aria-label="Toggle theme"
         title="Toggle theme"
       >
@@ -23,7 +23,7 @@ export default function ThemeToggle({ theme, setTheme }) {
 
   return (
     <button
-      className="glass-pill inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm transition hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+      className="theme-focus-ring glass-pill inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm transition hover:scale-[1.01]"
       onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
       aria-label="Toggle theme"
       title="Toggle theme"

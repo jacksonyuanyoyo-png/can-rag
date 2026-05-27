@@ -27,6 +27,15 @@ import {
   surfaceInput,
   libraryEmbeddedShell,
   libraryStandaloneShell,
+  libraryPageRoot,
+  libraryPageRootStandalone,
+  libraryCard,
+  libraryIconBox,
+  libraryTableHead,
+  libraryTableRow,
+  libraryPaginationActive,
+  libraryPaginationBtn,
+  libraryLink,
   truncateId,
 } from "./libraryUi"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -34,7 +43,7 @@ import { cls } from "./utils"
 
 function FileIcon() {
   return (
-    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/55 bg-white/55 text-gray-600 shadow-inner backdrop-blur-xl">
+    <div className={libraryIconBox}>
       <FileText className="h-4 w-4" strokeWidth={1.5} />
     </div>
   )
@@ -87,12 +96,12 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
       <div
         className={cls(
           embedded
-            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-gray-950"
-            : "apple-surface flex h-dvh flex-col items-center justify-center text-gray-950",
+            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-slate-800"
+            : "apple-surface flex h-dvh flex-col items-center justify-center text-slate-800",
         )}
       >
-        <p className="text-sm text-gray-500">{t("kbDetailNotFound")}</p>
-        <Link href="/library" className="mt-4 text-sm text-gray-700 underline hover:text-gray-950">
+        <p className="text-sm text-slate-500">{t("kbDetailNotFound")}</p>
+        <Link href="/library" className={cls("mt-4 text-sm", libraryLink)}>
           {t("kbBackToList")}
         </Link>
       </div>
@@ -100,34 +109,28 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
   }
 
   return (
-    <div
-      className={cls(
-        embedded
-          ? "flex min-h-0 flex-1 flex-col overflow-hidden text-gray-950"
-          : "apple-surface flex h-dvh w-full flex-col overflow-hidden text-gray-950",
-      )}
-    >
+    <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
       <div
         className={embedded ? libraryEmbeddedShell : libraryStandaloneShell}
       >
-        <nav className="mb-3 shrink-0 text-sm text-gray-500">
-          <Link href="/library" className="transition hover:text-gray-950">
+        <nav className="mb-3 shrink-0 text-sm text-slate-500">
+          <Link href="/library" className={libraryLink}>
             {t("knowledgeBaseSection")}
           </Link>
-          <span className="mx-1.5 text-gray-400">/</span>
+          <span className="mx-1.5 text-slate-300">/</span>
         </nav>
 
         <header className="mb-5 shrink-0">
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="min-w-0 flex-1 overflow-hidden pr-2 text-left">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-950 sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-3xl">
                 {knowledgeBase.name}
               </h1>
-              <div className="mt-3 flex w-full max-w-full flex-wrap items-center gap-x-5 gap-y-2 text-left text-sm text-gray-600">
+              <div className="mt-3 flex w-full max-w-full flex-wrap items-center gap-x-5 gap-y-2 text-left text-sm text-slate-600">
                 <div className="flex min-w-0 max-w-full items-center gap-1.5">
-                  <span className="shrink-0 text-gray-500">{t("kbDetailId")}</span>
+                  <span className="shrink-0 text-slate-500">{t("kbDetailId")}</span>
                   <code
-                    className="truncate text-xs text-gray-700"
+                    className="truncate text-xs text-slate-700"
                     title={knowledgeBase.id}
                   >
                     {truncateId(knowledgeBase.id, 28)}
@@ -135,24 +138,24 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                   <button
                     type="button"
                     onClick={copyId}
-                    className="shrink-0 rounded-full p-1 text-gray-500 transition hover:bg-white/55 hover:text-gray-950"
+                    className="shrink-0 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-[#5C7CFA]"
                     title={copied ? t("kbDetailCopied") : t("kbDetailCopy")}
                   >
                     <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
                 <span className="shrink-0">
-                  <span className="text-gray-500">{t("kbDetailResource")}</span> {resourceLabel}
+                  <span className="text-slate-500">{t("kbDetailResource")}</span> {resourceLabel}
                 </span>
                 <span className="shrink-0">
-                  <span className="text-gray-500">{t("kbDetailUpdated")}</span>{" "}
+                  <span className="text-slate-500">{t("kbDetailUpdated")}</span>{" "}
                   {formatDateTime(knowledgeBase.updatedAt, locale)}
                 </span>
               </div>
               {knowledgeBase.description ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="mt-2 block w-full min-w-0 cursor-default truncate text-left text-sm text-gray-600">
+                    <p className="mt-2 block w-full min-w-0 cursor-default truncate text-left text-sm text-slate-600">
                       {knowledgeBase.description}
                     </p>
                   </TooltipTrigger>
@@ -160,7 +163,7 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                     side="bottom"
                     align="start"
                     sideOffset={6}
-                    className="max-w-md border border-white/55 bg-white/95 px-3 py-2 text-left text-xs leading-relaxed font-normal text-gray-800 shadow-lg backdrop-blur-xl"
+                    className="max-w-md border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-relaxed font-normal text-slate-700 shadow-lg"
                   >
                     {knowledgeBase.description}
                   </TooltipContent>
@@ -170,13 +173,13 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                className="rounded-full p-2 text-gray-600 transition hover:bg-white/55"
+                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-[#5C7CFA]"
                 aria-label={t("more")}
               >
                 <MoreHorizontal className="h-5 w-5" strokeWidth={1.5} />
               </button>
               <button type="button" className={cls("inline-flex items-center gap-2 px-4 py-2", surfaceBtn)}>
-                <Target className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
+                <Target className="h-4 w-4 text-slate-500" strokeWidth={1.5} />
                 {t("kbHitTest")}
               </button>
             </div>
@@ -203,7 +206,7 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="rounded-2xl border border-white/55 bg-white/55 p-2.5 text-gray-700 shadow-inner backdrop-blur-xl transition hover:bg-white/70"
+              className={cls("p-2.5", surfaceBtn)}
               aria-label={t("kbDetailRefresh")}
             >
               <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
@@ -222,11 +225,11 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
           </div>
         </div>
 
-        <div className="glass-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl">
+        <div className={libraryCard}>
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-white/45 text-[11px] font-semibold tracking-wide text-gray-500">
+                <tr className={libraryTableHead}>
                   <th className="whitespace-nowrap px-4 py-3">{t("kbFileColNameId")}</th>
                   <th className="whitespace-nowrap px-4 py-3">
                     <span className="inline-flex items-center gap-1">
@@ -247,7 +250,7 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-16 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-4 py-16 text-center text-sm text-slate-500">
                       {t("kbFileNoResults")}
                     </td>
                   </tr>
@@ -255,32 +258,32 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                   paginated.map((file) => (
                     <tr
                       key={file.id}
-                      className="border-b border-white/35 transition-colors hover:bg-white/55"
+                      className={libraryTableRow}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <FileIcon />
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-medium tracking-tight text-gray-950">
+                            <div className="truncate text-sm font-medium tracking-tight text-slate-800">
                               {file.name}
                             </div>
-                            <div className="truncate text-[11px] text-gray-500" title={file.id}>
+                            <div className="truncate text-[11px] text-slate-500" title={file.id}>
                               {truncateId(file.id)}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-gray-600">
+                        <span className="inline-flex items-center gap-1.5 text-slate-600">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {t("kbFileStatusAvailable")}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {t("kbFileCharCount", { count: file.charCount })}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">{file.format}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{file.format}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {formatDateTime(file.uploadedAt, locale)}
                       </td>
                     </tr>
@@ -290,26 +293,26 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             </table>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-4 border-t border-white/45 px-4 py-3 text-sm text-gray-500">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-4 border-t border-slate-100 px-4 py-3 text-sm text-slate-500">
             <span>{t("kbTotalItems", { count: filtered.length })}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-full p-1.5 text-gray-600 transition hover:bg-white/55 disabled:opacity-30"
+                className={libraryPaginationBtn}
                 aria-label={t("kbPrevPage")}
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
               </button>
-              <span className="grid h-8 min-w-8 place-items-center rounded-2xl bg-white/70 px-2 text-sm font-medium text-gray-950 shadow-sm">
+              <span className={libraryPaginationActive}>
                 {currentPage}
               </span>
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-full p-1.5 text-gray-600 transition hover:bg-white/55 disabled:opacity-30"
+                className={libraryPaginationBtn}
                 aria-label={t("kbNextPage")}
               >
                 <ChevronRight className="h-4 w-4" strokeWidth={1.5} />

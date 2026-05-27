@@ -80,7 +80,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onCreateTemplate,
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   placeholder={t("templateNamePlaceholder")}
-                  className="w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800"
+                  className="w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-[var(--fi-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--fi-primary)_20%,transparent)] dark:border-zinc-700 dark:bg-zinc-800"
                   autoFocus
                 />
               </div>
@@ -95,7 +95,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onCreateTemplate,
                   onChange={(e) => setTemplateContent(e.target.value)}
                   placeholder={t("templateContentPlaceholder")}
                   rows={8}
-                  className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800"
+                  className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-[var(--fi-primary)] focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--fi-primary)_20%,transparent)] dark:border-zinc-700 dark:bg-zinc-800"
                 />
               </div>
 

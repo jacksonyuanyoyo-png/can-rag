@@ -8,6 +8,12 @@ import { useLocale } from "./LocaleProvider"
 import { addKnowledgeBase } from "./mockKnowledgeBases"
 import {
   libraryEmbeddedShell,
+  libraryPageRoot,
+  libraryPageRootStandalone,
+  libraryFormCard,
+  librarySectionAccent,
+  libraryStepActive,
+  libraryStepInactive,
   primaryBtn,
   surfaceBtn,
   surfaceInput,
@@ -30,8 +36,8 @@ const FORM_GRID =
 function SectionTitle({ children }) {
   return (
     <div className="col-span-full mb-1 flex items-center gap-2.5 sm:mb-2">
-      <span className="h-4 w-1 shrink-0 rounded-sm bg-gray-950" aria-hidden />
-      <h2 className="text-sm font-semibold tracking-tight text-gray-950">{children}</h2>
+      <span className={librarySectionAccent} aria-hidden />
+      <h2 className="text-sm font-semibold tracking-tight text-slate-800">{children}</h2>
     </div>
   )
 }
@@ -42,9 +48,7 @@ function StepIndicator({ step, label, active }) {
       <span
         className={cls(
           "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold",
-          active
-            ? "bg-gray-950 text-white shadow-sm"
-            : "border border-white/55 bg-white/55 text-gray-400 shadow-inner backdrop-blur-xl",
+          active ? libraryStepActive : libraryStepInactive,
         )}
       >
         {step}
@@ -52,7 +56,7 @@ function StepIndicator({ step, label, active }) {
       <span
         className={cls(
           "truncate text-sm font-medium",
-          active ? "text-gray-950" : "text-gray-400",
+          active ? "text-slate-800" : "text-slate-400",
         )}
       >
         {label}
@@ -65,7 +69,7 @@ function CharCounter({ current, max, className }) {
   return (
     <span
       className={cls(
-        "pointer-events-none absolute text-xs text-gray-400",
+        "pointer-events-none absolute text-xs text-slate-400",
         className,
       )}
     >
@@ -78,7 +82,7 @@ function FormLabel({ label, required, labelExtra, htmlFor }) {
   return (
     <label
       htmlFor={htmlFor}
-      className="flex min-w-0 items-start gap-1.5 text-sm font-medium leading-snug text-gray-950 sm:items-center"
+      className="flex min-w-0 items-start gap-1.5 text-sm font-medium leading-snug text-slate-800 sm:items-center"
     >
       <span className="min-w-0 break-words">
         {label}
@@ -161,13 +165,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
   }
 
   return (
-    <div
-      className={cls(
-        embedded
-          ? "flex min-h-0 flex-1 flex-col overflow-hidden text-gray-950"
-          : "apple-surface flex h-dvh w-full flex-col overflow-hidden text-gray-950",
-      )}
-    >
+    <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
       <div
         className={cls(
           libraryEmbeddedShell,
@@ -179,12 +177,12 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
             <div className="flex min-w-0 items-center gap-2">
               <Link
                 href="/library"
-                className="shrink-0 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-white/55 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="theme-focus-ring shrink-0 rounded-full p-1.5 text-slate-500 transition-colors hover:bg-white hover:text-[var(--fi-primary)]"
                 aria-label={t("kbBackToList")}
               >
                 <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
               </Link>
-              <h1 className="min-w-0 text-lg font-semibold tracking-tight text-gray-950 sm:text-xl">
+              <h1 className="min-w-0 text-lg font-semibold tracking-tight text-slate-800 sm:text-xl">
                 {t("kbCreate")}
               </h1>
             </div>
@@ -194,12 +192,12 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
               aria-label={t("kbCreateStepDefine")}
             >
               <StepIndicator step={1} label={t("kbCreateStepDefine")} active />
-              <div className="h-px w-6 shrink-0 bg-gray-200 sm:w-10" aria-hidden />
+              <div className="h-px w-6 shrink-0 bg-slate-200 sm:w-10" aria-hidden />
               <StepIndicator step={2} label={t("kbCreateStepImport")} active={false} />
             </nav>
           </header>
 
-          <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
+          <form className={cls(libraryFormCard, "space-y-10")} onSubmit={(e) => e.preventDefault()}>
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbCreateSectionDefine")}</SectionTitle>
 
@@ -276,7 +274,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
                     <TooltipTrigger asChild>
                       <button
                         type="button"
-                        className="rounded-full p-0.5 text-gray-400 transition hover:bg-white/55 hover:text-gray-600"
+                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-[var(--fi-primary)]"
                         aria-label={t("kbCreateVectorModelHelp")}
                       >
                         <HelpCircle className="h-4 w-4" strokeWidth={1.5} />
@@ -310,7 +308,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
                   {errors.vector ? (
                     <p className="mt-1.5 text-xs text-red-600">{errors.vector}</p>

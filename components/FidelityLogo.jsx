@@ -2,7 +2,7 @@ import { cls } from "./utils"
 
 const SOURCES = {
   mark: "/brand/fidelity-mark.svg",
-  full: "/brand/fidelity_international_rgb_mono.svg",
+  full: "/brand/fidelity_international_rgb_full.svg",
   png: "/brand/fidelity_international_rgb_wo1x.png",
 }
 

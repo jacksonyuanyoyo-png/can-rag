@@ -8,7 +8,7 @@ export default function Header({ sidebarCollapsed, setSidebarOpen }) {
       {sidebarCollapsed && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="inline-flex items-center justify-center rounded-full p-2 hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:hidden dark:hover:bg-white/10"
+          className="theme-focus-ring inline-flex items-center justify-center rounded-full p-2 hover:bg-white/55 md:hidden dark:hover:bg-white/10"
           aria-label="Open sidebar"
         >
           <Menu className="h-5 w-5" />
