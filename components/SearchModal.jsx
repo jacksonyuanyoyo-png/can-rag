@@ -20,7 +20,10 @@ export default function SearchModal({
   const filteredConversations = useMemo(() => {
     if (!query.trim()) return conversations
     const q = query.toLowerCase()
-    return conversations.filter((c) => c.title.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
+    return conversations.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) || (c.preview ?? "").toLowerCase().includes(q),
+    )
   }, [conversations, query])
 
   const groupedConversations = useMemo(() => {

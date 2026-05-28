@@ -1,11 +1,21 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Check } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
-import { getKnowledgeBaseById } from "./mockKnowledgeBases"
+import { getKnowledgeBase } from "@/lib/api/knowledge-bases"
+import {
+  cancelImportJob,
+  isImportJobTerminal,
+  pollImportJob,
+  retryImportJob,
+  uploadAndImportFiles,
+} from "@/lib/api/uploads"
+import { formatApiErrorMessage } from "@/lib/api/format-error"
+import { ApiError } from "@/lib/api/api-error"
+import { ErrorCodes } from "@/lib/api/error-codes"
 import {
   libraryEmbeddedShell,
   libraryPageRoot,
@@ -23,7 +33,11 @@ import {
   surfaceBtn,
 } from "./libraryUi"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import { cls } from "./utils"
+
+const MAX_FILE_BYTES = 20 * 1024 * 1024
+const MAX_FILE_COUNT = 100
 
 const FORM_GRID =
   "grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,max-content)_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-6"
@@ -96,12 +110,13 @@ function FormLabel({ children, required, htmlFor }) {
   )
 }
 
-function ChunkRadio({ id, name, label, description, checked, onChange }) {
+function ChunkRadio({ id, name, label, description, checked, onChange, disabled }) {
   return (
     <label
       htmlFor={id}
       className={cls(
-        "flex min-w-[8.5rem] flex-1 cursor-pointer gap-2.5 rounded-2xl border p-3 transition-colors",
+        "flex min-w-[8.5rem] flex-1 gap-2.5 rounded-2xl border p-3 transition-colors",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         checked ? libraryChunkRadioChecked : libraryChunkRadio,
       )}
     >
@@ -111,6 +126,7 @@ function ChunkRadio({ id, name, label, description, checked, onChange }) {
         name={name}
         className="mt-1 h-4 w-4 shrink-0 accent-[var(--fi-primary)]"
         checked={checked}
+        disabled={disabled}
         onChange={onChange}
       />
       <span className="min-w-0">
@@ -128,7 +144,9 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   const kbId =
     typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : ""
 
-  const knowledgeBase = getKnowledgeBaseById(kbId)
+  const [knowledgeBase, setKnowledgeBase] = useState(null)
+  const [kbLoading, setKbLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
   const [chunkStrategy, setChunkStrategy] = useState("default")
   const [metaFilename, setMetaFilename] = useState(true)
@@ -136,10 +154,67 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   const [submitting, setSubmitting] = useState(false)
   const [pickedFiles, setPickedFiles] = useState([])
   const [dragActive, setDragActive] = useState(false)
+  const [error, setError] = useState("")
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 })
+  const [importJob, setImportJob] = useState(null)
+  const [failedJobId, setFailedJobId] = useState(null)
   const fileInputRef = useRef(null)
+  const abortRef = useRef(null)
 
   const ACCEPT =
     ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.csv,.xls,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
+
+  useEffect(() => {
+    if (!kbId) return
+    let cancelled = false
+    ;(async () => {
+      setKbLoading(true)
+      try {
+        const { data } = await getKnowledgeBase(kbId)
+        if (!cancelled) {
+          setKnowledgeBase(data)
+          setNotFound(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (ApiError.isApiError(err) && err.code === ErrorCodes.KB_NOT_FOUND) {
+            setNotFound(true)
+          } else {
+            setError(t("kbLoadError", { message: formatApiErrorMessage(err) }))
+          }
+          setKnowledgeBase(null)
+        }
+      } finally {
+        if (!cancelled) setKbLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [kbId, t])
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  const validateFiles = (files) => {
+    if (files.length === 0) {
+      setError(t("kbImportNoFiles"))
+      return false
+    }
+    if (files.length > MAX_FILE_COUNT) {
+      setError(t("kbImportUploadLimit"))
+      return false
+    }
+    const oversized = files.find((f) => f.size > MAX_FILE_BYTES)
+    if (oversized) {
+      setError(t("kbImportFailed", { message: `${oversized.name} > 20MB` }))
+      return false
+    }
+    return true
+  }
 
   const mergeFiles = (incoming) => {
     if (!incoming?.length) return
@@ -150,6 +225,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
       for (const f of incoming) map.set(key(f), f)
       return Array.from(map.values())
     })
+    setError("")
   }
 
   const openFilePicker = () => {
@@ -187,13 +263,97 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
     mergeFiles(list)
   }
 
-  const handleConfirm = () => {
+  const importOptions = () => ({
+    chunkStrategy,
+    metaFilename,
+    metaHeadings,
+  })
+
+  const runImport = async (files, existingJobId = null) => {
     setSubmitting(true)
-    router.push(`/library/${kbId}`)
-    setSubmitting(false)
+    setError("")
+    setImportJob(null)
+    setFailedJobId(null)
+    setUploadProgress({ completed: 0, total: files.length })
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      let finalJob
+      if (existingJobId) {
+        const { data: retriedJob } = await retryImportJob(existingJobId, importOptions())
+        setImportJob(retriedJob)
+        finalJob = await pollImportJob(retriedJob.id, {
+          onUpdate: setImportJob,
+          signal: controller.signal,
+        })
+      } else {
+        finalJob = await uploadAndImportFiles(kbId, files, importOptions(), {
+          onUploadProgress: (completed, total) => setUploadProgress({ completed, total }),
+          onImportUpdate: setImportJob,
+          signal: controller.signal,
+        })
+      }
+
+      if (finalJob.status === "completed") {
+        router.push(`/library/${kbId}`)
+        return
+      }
+
+      const failMessage =
+        finalJob.errorMessage ||
+        finalJob.errorCode ||
+        t("kbImportFailed", { message: finalJob.status })
+      setFailedJobId(finalJob.id)
+      setError(t("kbImportFailed", { message: failMessage }))
+    } catch (err) {
+      setError(t("kbImportFailed", { message: formatApiErrorMessage(err) }))
+    } finally {
+      setSubmitting(false)
+      abortRef.current = null
+    }
   }
 
-  if (!knowledgeBase) {
+  const handleConfirm = async () => {
+    if (!validateFiles(pickedFiles)) return
+    await runImport(pickedFiles)
+  }
+
+  const handleRetry = async () => {
+    if (!failedJobId) return
+    await runImport(pickedFiles, failedJobId)
+  }
+
+  const handleLeave = async (destination) => {
+    if (submitting) {
+      abortRef.current?.abort()
+      if (importJob?.id && !isImportJobTerminal(importJob.status)) {
+        try {
+          await cancelImportJob(importJob.id)
+        } catch {
+          // User is leaving; best-effort cancel
+        }
+      }
+    }
+    router.push(destination)
+  }
+
+  if (kbLoading) {
+    return (
+      <div
+        className={cls(
+          embedded
+            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-slate-800"
+            : "apple-surface flex h-dvh flex-col items-center justify-center text-slate-800",
+        )}
+      >
+        <p className="text-sm text-slate-500">{t("kbLoading")}</p>
+      </div>
+    )
+  }
+
+  if (notFound || !knowledgeBase) {
     return (
       <div
         className={cls(
@@ -209,6 +369,9 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
       </div>
     )
   }
+
+  const showUploadProgress = submitting && uploadProgress.total > 0 && !importJob
+  const showImportProgress = submitting && importJob
 
   return (
     <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
@@ -248,8 +411,37 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
             </nav>
           </header>
 
+          {error ? (
+            <p className="mb-4 text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          {(showUploadProgress || showImportProgress) ? (
+            <div className="mb-6 space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
+              {showUploadProgress ? (
+                <p className="text-sm text-slate-600">
+                  {t("kbImportUploading", {
+                    completed: uploadProgress.completed,
+                    total: uploadProgress.total,
+                  })}
+                </p>
+              ) : null}
+              {showImportProgress ? (
+                <>
+                  <p className="text-sm text-slate-600">
+                    {t("kbImportProgress", {
+                      progress: importJob.progress ?? 0,
+                      stage: importJob.stage ?? "—",
+                    })}
+                  </p>
+                  <Progress value={importJob.progress ?? 0} className="h-2" />
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
           <form className={cls(libraryFormCard, "space-y-10")} onSubmit={(e) => e.preventDefault()}>
-            {/* 上传区域 */}
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportUploadSection")}</SectionTitle>
 
@@ -263,6 +455,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 accept={ACCEPT}
                 aria-label={t("kbImportUploadSelect")}
                 onChange={onFileInputChange}
+                disabled={submitting}
               />
               <div
                 className={cls(
@@ -289,6 +482,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                   <button
                     type="button"
+                    disabled={submitting}
                     onClick={(e) => {
                       e.stopPropagation()
                       openFilePicker()
@@ -296,6 +490,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     className={cls(
                       "inline-flex items-center justify-center px-4 py-2.5",
                       primaryBtn,
+                      "disabled:opacity-60",
                     )}
                   >
                     {t("kbImportUploadSelect")}
@@ -312,11 +507,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                       </p>
                       <button
                         type="button"
+                        disabled={submitting}
                         onClick={(e) => {
                           e.stopPropagation()
                           setPickedFiles([])
                         }}
-                        className="text-xs text-slate-500 underline hover:text-[var(--fi-primary)]"
+                        className="text-xs text-slate-500 underline hover:text-[var(--fi-primary)] disabled:opacity-50"
                       >
                         {t("kbImportUploadClear")}
                       </button>
@@ -334,7 +530,6 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
               </div>
             </section>
 
-            {/* 配置切片策略 */}
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportChunkTitle")}</SectionTitle>
 
@@ -351,6 +546,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     label={t("kbImportChunkDefault")}
                     description={t("kbImportChunkDefaultDesc")}
                     checked={chunkStrategy === "default"}
+                    disabled={submitting}
                     onChange={() => setChunkStrategy("default")}
                   />
                   <ChunkRadio
@@ -359,14 +555,16 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     label={t("kbImportChunkCustom")}
                     description={t("kbImportChunkCustomDesc")}
                     checked={chunkStrategy === "custom"}
+                    disabled={submitting}
                     onChange={() => setChunkStrategy("custom")}
                   />
                   <ChunkRadio
                     id="chunk-whole"
                     name="chunk-strategy"
                     label={t("kbImportChunkWhole")}
-                    description={t("kbImportChunkWholeDesc")}
+                    description={t("kbImportWholeDisabled")}
                     checked={chunkStrategy === "whole"}
+                    disabled
                     onChange={() => setChunkStrategy("whole")}
                   />
                   <ChunkRadio
@@ -375,6 +573,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     label={t("kbImportChunkPage")}
                     description={t("kbImportChunkPageDesc")}
                     checked={chunkStrategy === "page"}
+                    disabled={submitting}
                     onChange={() => setChunkStrategy("page")}
                   />
                 </div>
@@ -386,6 +585,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                       <Checkbox
                         className={SURFACE_CHECKBOX}
                         checked={metaFilename}
+                        disabled={submitting}
                         onCheckedChange={(v) => setMetaFilename(v === true)}
                       />
                       {t("kbImportChunkMetaFilename")}
@@ -394,6 +594,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                       <Checkbox
                         className={SURFACE_CHECKBOX}
                         checked={metaHeadings}
+                        disabled={submitting}
                         onCheckedChange={(v) => setMetaHeadings(v === true)}
                       />
                       {t("kbImportChunkMetaHeadings")}
@@ -403,7 +604,6 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
               </div>
             </section>
 
-            {/* 底部操作按钮 */}
             <div className={FORM_GRID}>
               <div className="col-span-full flex flex-wrap items-center gap-2 sm:col-start-2 sm:gap-3">
                 <button
@@ -418,9 +618,23 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 >
                   {t("kbImportSubmit")}
                 </button>
+                {failedJobId ? (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleRetry}
+                    className={cls(
+                      "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",
+                      surfaceBtn,
+                      "disabled:opacity-60",
+                    )}
+                  >
+                    {t("kbImportRetry")}
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => router.push(`/library/${kbId}`)}
+                  onClick={() => handleLeave(`/library/${kbId}`)}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",
                     surfaceBtn,
@@ -430,7 +644,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => router.push("/library")}
+                  onClick={() => handleLeave("/library")}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",
                     surfaceBtn,

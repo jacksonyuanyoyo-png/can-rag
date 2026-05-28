@@ -1,13 +1,13 @@
 "use client"
 
 import AIAssistantUI from "../../components/AIAssistantUI"
-import { LocaleProvider } from "../../components/LocaleProvider"
+import { AuthGate } from "@/components/auth/AuthGate"
 
 export default function MainAppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <LocaleProvider>
+    <AuthGate>
       <AIAssistantUI />
       {children}
-    </LocaleProvider>
+    </AuthGate>
   )
 }

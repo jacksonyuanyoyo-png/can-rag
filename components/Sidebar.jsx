@@ -36,13 +36,20 @@ export default function Sidebar({
   selectedId,
   onSelect,
   togglePin,
+  onRenameConversation,
+  onDeleteConversation,
   query,
   setQuery,
   searchRef,
   createFolder,
+  onRenameFolder,
+  onDeleteFolder,
   createNewChat,
   templates = [],
-  setTemplates = () => {},
+  onCreateTemplate,
+  onUpdateTemplate,
+  onRenameTemplate,
+  onDeleteTemplate,
   onUseTemplate = () => {},
   sidebarCollapsed = false,
   setSidebarCollapsed = () => {},
@@ -76,32 +83,23 @@ export default function Sidebar({
   }
 
   const handleDeleteFolder = (folderName) => {
-    const updatedConversations = conversations.map((conv) =>
-      conv.folder === folderName ? { ...conv, folder: null } : conv,
-    )
-    console.log("Delete folder:", folderName, "Updated conversations:", updatedConversations)
+    const folder = folders.find((f) => f.name === folderName)
+    if (!folder) return
+    onDeleteFolder?.(folder.id, folderName)
   }
 
   const handleRenameFolder = (oldName, newName) => {
-    const updatedConversations = conversations.map((conv) =>
-      conv.folder === oldName ? { ...conv, folder: newName } : conv,
-    )
-    console.log("Rename folder:", oldName, "to", newName, "Updated conversations:", updatedConversations)
+    const folder = folders.find((f) => f.name === oldName)
+    if (!folder) return
+    onRenameFolder?.(folder.id, oldName, newName)
   }
 
   const handleCreateTemplate = (templateData) => {
     if (editingTemplate) {
-      const updatedTemplates = templates.map((t) =>
-        t.id === editingTemplate.id ? { ...templateData, id: editingTemplate.id } : t,
-      )
-      setTemplates(updatedTemplates)
+      onUpdateTemplate?.(editingTemplate.id, templateData)
       setEditingTemplate(null)
     } else {
-      const newTemplate = {
-        ...templateData,
-        id: Date.now().toString(),
-      }
-      setTemplates([...templates, newTemplate])
+      onCreateTemplate?.(templateData)
     }
     setShowCreateTemplateModal(false)
   }
@@ -112,15 +110,11 @@ export default function Sidebar({
   }
 
   const handleRenameTemplate = (templateId, newName) => {
-    const updatedTemplates = templates.map((t) =>
-      t.id === templateId ? { ...t, name: newName, updatedAt: new Date().toISOString() } : t,
-    )
-    setTemplates(updatedTemplates)
+    onRenameTemplate?.(templateId, newName)
   }
 
   const handleDeleteTemplate = (templateId) => {
-    const updatedTemplates = templates.filter((t) => t.id !== templateId)
-    setTemplates(updatedTemplates)
+    onDeleteTemplate?.(templateId)
   }
 
   const handleUseTemplate = (template) => {
@@ -319,6 +313,8 @@ export default function Sidebar({
                       active={!libraryActive && c.id === selectedId}
                       onSelect={() => onSelect(c.id)}
                       onTogglePin={() => togglePin(c.id)}
+                      onRename={onRenameConversation}
+                      onDelete={onDeleteConversation}
                       showMeta
                     />
                   ))
@@ -350,6 +346,8 @@ export default function Sidebar({
                       libraryActive={libraryActive}
                       onSelect={onSelect}
                       togglePin={togglePin}
+                      onRenameConversation={onRenameConversation}
+                      onDeleteConversation={onDeleteConversation}
                       onDeleteFolder={handleDeleteFolder}
                       onRenameFolder={handleRenameFolder}
                     />

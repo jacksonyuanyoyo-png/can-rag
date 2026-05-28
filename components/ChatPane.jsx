@@ -36,13 +36,25 @@ function ThinkingBlock({ onPause }) {
 }
 
 const ChatPane = forwardRef(function ChatPane(
-  { conversation, onSend, onEditMessage, onResendMessage, isThinking, onPauseThinking, selectedModel, onModelChange },
+  {
+    conversation,
+    onSend,
+    onEditMessage,
+    onResendMessage,
+    onMessageFeedback,
+    isThinking,
+    onPauseThinking,
+    selectedModel,
+    onModelChange,
+    models,
+  },
   ref,
 ) {
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+  const [feedbackByMessageId, setFeedbackByMessageId] = useState({})
   const composerRef = useRef(null)
   const { t, formatTimeAgo } = useLocale()
 
@@ -67,6 +79,15 @@ const ChatPane = forwardRef(function ChatPane(
 
   const messages = Array.isArray(conversation.messages) ? conversation.messages : []
   const count = messages.length || conversation.messageCount || 0
+  const hasRunningAssistant = messages.some(
+    (m) => m.role === "assistant" && m.status === "running",
+  )
+  const showThinkingBlock = isThinking && !hasRunningAssistant
+
+  function handleFeedback(messageId, rating) {
+    setFeedbackByMessageId((prev) => ({ ...prev, [messageId]: rating }))
+    onMessageFeedback?.(messageId, rating)
+  }
 
   function startEdit(m) {
     setEditingId(m.id)
@@ -111,6 +132,7 @@ const ChatPane = forwardRef(function ChatPane(
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <LandingHero
           composerRef={composerRef}
+          models={models}
           selectedModel={selectedModel}
           onModelChange={onModelChange}
           onSend={onSend}
@@ -207,7 +229,10 @@ const ChatPane = forwardRef(function ChatPane(
               )
             }
 
-            const showTurnDivider = i < messages.length - 1 || isThinking
+            const showTurnDivider = i < messages.length - 1 || showThinkingBlock
+            const feedbackRating = feedbackByMessageId[m.id]
+            const isFailed = m.status === "failed" || m.error
+            const isCancelled = m.status === "cancelled"
             return (
               <div
                 key={m.id}
@@ -222,21 +247,52 @@ const ChatPane = forwardRef(function ChatPane(
                   <ChevronDown className="h-4 w-4 opacity-70" aria-hidden />
                 </div>
                 <div className="mt-3 whitespace-pre-wrap text-[15px] leading-7 text-slate-800 dark:text-slate-200">{m.content}</div>
+                {isFailed && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                    {m.error || t("messageGenerationFailed")}
+                  </p>
+                )}
+                {isCancelled && !isFailed && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{t("messageCancelled")}</p>
+                )}
+                {m.status === "running" && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={onPauseThinking}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-200/90 bg-white/80 px-3 py-1.5 text-xs text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Square className="h-3 w-3" /> {t("pause")}
+                    </button>
+                  </div>
+                )}
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-0.5">
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                      className={cls(
+                        "rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-800",
+                        feedbackRating === "positive"
+                          ? "text-[var(--fi-primary)]"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300",
+                      )}
                       title={t("feedbackPositive")}
                       aria-label={t("feedbackPositive")}
+                      onClick={() => handleFeedback(m.id, "positive")}
                     >
                       <ThumbsUp className="h-4 w-4" strokeWidth={1.75} />
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                      className={cls(
+                        "rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-800",
+                        feedbackRating === "negative"
+                          ? "text-red-500"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300",
+                      )}
                       title={t("feedbackNegative")}
                       aria-label={t("feedbackNegative")}
+                      onClick={() => handleFeedback(m.id, "negative")}
                     >
                       <ThumbsDown className="h-4 w-4" strokeWidth={1.75} />
                     </button>
@@ -270,12 +326,13 @@ const ChatPane = forwardRef(function ChatPane(
             )
           })}
 
-          {isThinking && <ThinkingBlock onPause={onPauseThinking} />}
+          {showThinkingBlock && <ThinkingBlock onPause={onPauseThinking} />}
         </>
       </div>
 
       <Composer
         ref={composerRef}
+        models={models}
         selectedModel={selectedModel}
         onModelChange={onModelChange}
         onSend={async (text) => {

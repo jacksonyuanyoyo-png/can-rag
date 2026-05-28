@@ -6,7 +6,7 @@ import Composer from "./Composer"
 import { useTypewriter, TypewriterLine } from "./TypewriterText"
 import { useLocale } from "./LocaleProvider"
 
-export default function LandingHero({ composerRef, selectedModel, onModelChange, onSend, busy, setBusy }) {
+export default function LandingHero({ composerRef, models, selectedModel, onModelChange, onSend, busy, setBusy }) {
   const { t, locale } = useLocale()
   const [titleDone, setTitleDone] = useState(false)
   const [subtitleDone, setSubtitleDone] = useState(false)
@@ -82,6 +82,7 @@ export default function LandingHero({ composerRef, selectedModel, onModelChange,
               ref={composerRef}
               landing
               landingReveal={animating}
+              models={models}
               selectedModel={selectedModel}
               onModelChange={onModelChange}
               onSend={async (text) => {

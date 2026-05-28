@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/next'
+import { AppProviders } from '@/components/providers/AppProviders'
 import './globals.css'
 
 const localeBootstrapScript = `try{var l=localStorage.getItem("locale");if(l==="en"||l==="zh"){document.documentElement.dataset.locale=l;document.documentElement.lang=l==="en"?"en":"zh-CN"}}catch(e){}`
@@ -25,7 +26,7 @@ export default function RootLayout({
         <Script id="locale-bootstrap" strategy="beforeInteractive">
           {localeBootstrapScript}
         </Script>
-        {children}
+        <AppProviders>{children}</AppProviders>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

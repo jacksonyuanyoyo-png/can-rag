@@ -25,7 +25,7 @@ const landingRevealItem = {
 }
 
 const Composer = forwardRef(function Composer(
-  { onSend, busy, landing = false, landingReveal = false, selectedModel, onModelChange },
+  { onSend, busy, landing = false, landingReveal = false, selectedModel, onModelChange, models },
   ref,
 ) {
   const { t } = useLocale()
@@ -136,7 +136,7 @@ const Composer = forwardRef(function Composer(
                 <Plus className="h-5 w-5" />
               </button>
             </ComposerActionsPopover>
-            <ModelSelector selectedModel={selectedModel} onSelect={onModelChange} />
+            <ModelSelector selectedModel={selectedModel} onSelect={onModelChange} models={models} />
           </div>
 
           <div className="flex shrink-0 items-center gap-1">

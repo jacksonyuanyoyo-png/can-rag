@@ -1,11 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, HelpCircle } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
-import { addKnowledgeBase } from "./mockKnowledgeBases"
+import { createKnowledgeBase } from "@/lib/api/knowledge-bases"
+import { listModels, pickEmbeddingModels, toModelOptions } from "@/lib/api/models"
+import { formatApiErrorMessage } from "@/lib/api/format-error"
+import { ApiError } from "@/lib/api/api-error"
+import { ErrorCodes } from "@/lib/api/error-codes"
 import {
   libraryEmbeddedShell,
   libraryPageRoot,
@@ -25,7 +29,7 @@ const NAME_MAX = 50
 const REMARKS_MAX = 400
 const NAME_PATTERN = /^[\u4e00-\u9fa5a-zA-Z0-9_\-.]*$/
 
-const VECTOR_MODELS = [
+const FALLBACK_VECTOR_MODELS = [
   { id: "multilingual-embedding", label: "multilingual-embedding" },
 ]
 
@@ -127,12 +131,40 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
 
   const [name, setName] = useState("")
   const [remarks, setRemarks] = useState("")
-  const [vectorModel, setVectorModel] = useState(VECTOR_MODELS[0].id)
-  const [errors, setErrors] = useState({ name: "", vector: "" })
+  const [vectorModels, setVectorModels] = useState(FALLBACK_VECTOR_MODELS)
+  const [vectorModel, setVectorModel] = useState(FALLBACK_VECTOR_MODELS[0].id)
+  const [errors, setErrors] = useState({ name: "", vector: "", submit: "" })
   const [submitting, setSubmitting] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setModelsLoading(true)
+      try {
+        const { data } = await listModels({ status: "active" })
+        const picked = pickEmbeddingModels(data ?? [])
+        const options = toModelOptions(picked)
+        if (!cancelled && options.length > 0) {
+          setVectorModels(options)
+          setVectorModel(options[0].id)
+        }
+      } catch {
+        if (!cancelled) {
+          setVectorModels(FALLBACK_VECTOR_MODELS)
+          setVectorModel(FALLBACK_VECTOR_MODELS[0].id)
+        }
+      } finally {
+        if (!cancelled) setModelsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const validate = () => {
-    const next = { name: "", vector: "" }
+    const next = { name: "", vector: "", submit: "" }
     const trimmed = name.trim()
     if (!trimmed) {
       next.name = t("kbCreateNameRequiredError")
@@ -149,15 +181,24 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
   const handleCreate = async (importAfter) => {
     if (!validate()) return
     setSubmitting(true)
+    setErrors((prev) => ({ ...prev, submit: "" }))
     try {
-      const kb = addKnowledgeBase({
+      const { data: kb } = await createKnowledgeBase({
         name: name.trim(),
-        description: remarks.trim(),
+        description: remarks.trim() || undefined,
+        embeddingModelId: vectorModel,
       })
       if (importAfter) {
         router.push(`/library/${kb.id}/import`)
       } else {
         router.push(`/library/${kb.id}`)
+      }
+    } catch (err) {
+      const message = formatApiErrorMessage(err)
+      if (ApiError.isApiError(err) && err.code === ErrorCodes.KB_NAME_DUPLICATED) {
+        setErrors((prev) => ({ ...prev, name: message, submit: "" }))
+      } else {
+        setErrors((prev) => ({ ...prev, submit: t("kbCreateError", { message }) }))
       }
     } finally {
       setSubmitting(false)
@@ -291,6 +332,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
                     <select
                       id="kb-vector-model"
                       value={vectorModel}
+                      disabled={modelsLoading || submitting}
                       onChange={(e) => {
                         setVectorModel(e.target.value)
                         if (errors.vector) setErrors((prev) => ({ ...prev, vector: "" }))
@@ -302,7 +344,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
                       )}
                       aria-invalid={Boolean(errors.vector)}
                     >
-                      {VECTOR_MODELS.map((m) => (
+                      {vectorModels.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.label}
                         </option>
@@ -317,11 +359,17 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
               </FormRow>
             </section>
 
+            {errors.submit ? (
+              <p className="text-sm text-red-600" role="alert">
+                {errors.submit}
+              </p>
+            ) : null}
+
             <div className={FORM_GRID}>
               <FormActions>
                 <button
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || modelsLoading}
                   onClick={() => handleCreate(true)}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",
@@ -333,7 +381,7 @@ export default function KnowledgeBaseCreatePage({ embedded = false }) {
                 </button>
                 <button
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || modelsLoading}
                   onClick={() => handleCreate(false)}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",

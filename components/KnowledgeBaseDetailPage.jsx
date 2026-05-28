@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import {
@@ -17,8 +17,15 @@ import {
   Target,
 } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
-import { getKnowledgeBaseById } from "./mockKnowledgeBases"
-import { getFilesForKnowledgeBase } from "./mockKnowledgeBaseFiles"
+import {
+  getKnowledgeBase,
+  getKnowledgeBaseIndexStats,
+  listKnowledgeBaseFiles,
+} from "@/lib/api/knowledge-bases"
+import { getFileStatusDotClass, getFileStatusLabel, getIndexStatusLabel } from "@/lib/api/kb-display"
+import { formatApiErrorMessage } from "@/lib/api/format-error"
+import { ApiError } from "@/lib/api/api-error"
+import { ErrorCodes } from "@/lib/api/error-codes"
 import {
   PAGE_SIZE_OPTIONS,
   formatDateTime,
@@ -55,32 +62,107 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
   const params = useParams()
   const kbId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : ""
 
-  const knowledgeBase = getKnowledgeBaseById(kbId)
-  const allFiles = useMemo(() => getFilesForKnowledgeBase(kbId), [kbId])
-
+  const [knowledgeBase, setKnowledgeBase] = useState(null)
+  const [indexStats, setIndexStats] = useState(null)
+  const [files, setFiles] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedQuery, setDebouncedQuery] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [filesLoading, setFilesLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+  const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const fetchKnowledgeBase = useCallback(async () => {
+    if (!kbId) return false
+    try {
+      const { data } = await getKnowledgeBase(kbId)
+      setKnowledgeBase(data)
+      setNotFound(false)
+      return true
+    } catch (err) {
+      if (ApiError.isApiError(err) && err.code === ErrorCodes.KB_NOT_FOUND) {
+        setNotFound(true)
+        setKnowledgeBase(null)
+      } else {
+        setError(t("kbLoadError", { message: formatApiErrorMessage(err) }))
+      }
+      return false
+    }
+  }, [kbId, t])
+
+  const fetchIndexStats = useCallback(async () => {
+    if (!kbId) return
+    try {
+      const { data } = await getKnowledgeBaseIndexStats(kbId)
+      setIndexStats(data)
+    } catch {
+      setIndexStats(null)
+    }
+  }, [kbId])
+
+  const fetchFiles = useCallback(async () => {
+    if (!kbId) return
+    setFilesLoading(true)
+    try {
+      const result = await listKnowledgeBaseFiles(kbId, {
+        page,
+        pageSize,
+        q: debouncedQuery || undefined,
+      })
+      setFiles(result.data)
+      setTotal(result.pagination.total)
+    } catch (err) {
+      setError(t("kbLoadError", { message: formatApiErrorMessage(err) }))
+      setFiles([])
+      setTotal(0)
+    } finally {
+      setFilesLoading(false)
+    }
+  }, [kbId, page, pageSize, debouncedQuery, t])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError("")
+      const ok = await fetchKnowledgeBase()
+      if (!cancelled && ok) {
+        await fetchIndexStats()
+      }
+      if (!cancelled) setLoading(false)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [fetchKnowledgeBase, fetchIndexStats])
+
+  useEffect(() => {
+    if (loading || notFound || !knowledgeBase) return
+    fetchFiles()
+  }, [loading, notFound, knowledgeBase, fetchFiles])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    setError("")
+    await Promise.all([fetchKnowledgeBase(), fetchIndexStats(), fetchFiles()])
+    setRefreshing(false)
+  }
 
   const resourceLabel =
     knowledgeBase?.resourceType === "team" ? t("kbResourceTeam") : t("kbResourcePersonal")
 
-  const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return allFiles
-    return allFiles.filter(
-      (f) => f.name.toLowerCase().includes(q) || f.id.toLowerCase().includes(q),
-    )
-  }, [allFiles, searchQuery])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const currentPage = Math.min(page, totalPages)
-
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filtered.slice(start, start + pageSize)
-  }, [filtered, currentPage, pageSize])
 
   const copyId = async () => {
     if (!knowledgeBase?.id) return
@@ -91,7 +173,21 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
     } catch {}
   }
 
-  if (!knowledgeBase) {
+  if (loading) {
+    return (
+      <div
+        className={cls(
+          embedded
+            ? "flex min-h-0 flex-1 flex-col items-center justify-center text-slate-800"
+            : "apple-surface flex h-dvh flex-col items-center justify-center text-slate-800",
+        )}
+      >
+        <p className="text-sm text-slate-500">{t("kbLoading")}</p>
+      </div>
+    )
+  }
+
+  if (notFound || !knowledgeBase) {
     return (
       <div
         className={cls(
@@ -151,6 +247,18 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                   <span className="text-slate-500">{t("kbDetailUpdated")}</span>{" "}
                   {formatDateTime(knowledgeBase.updatedAt, locale)}
                 </span>
+                {indexStats ? (
+                  <span className="shrink-0">
+                    <span className="text-slate-500">{t("kbIndexStatus")}</span>{" "}
+                    {getIndexStatusLabel(indexStats.status, t)}
+                    {" · "}
+                    {t("kbIndexStatsSummary", {
+                      ready: indexStats.readyFileCount ?? indexStats.fileCount ?? 0,
+                      total: indexStats.fileCount ?? 0,
+                      chunks: indexStats.chunkCount ?? 0,
+                    })}
+                  </span>
+                ) : null}
               </div>
               {knowledgeBase.description ? (
                 <Tooltip>
@@ -186,6 +294,12 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
           </div>
         </header>
 
+        {error ? (
+          <p className="mb-3 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+
         <div className="mb-4 flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1 lg:max-w-md">
             <Search
@@ -206,10 +320,12 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className={cls("p-2.5", surfaceBtn)}
+              disabled={refreshing}
+              onClick={handleRefresh}
+              className={cls("p-2.5", surfaceBtn, refreshing && "opacity-60")}
               aria-label={t("kbDetailRefresh")}
             >
-              <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+              <RefreshCw className={cls("h-4 w-4", refreshing && "animate-spin")} strokeWidth={1.5} />
             </button>
             <button type="button" className={cls("px-4 py-2", surfaceBtn)}>
               {t("kbDetailBatch")}
@@ -248,14 +364,20 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                 </tr>
               </thead>
               <tbody>
-                {paginated.length === 0 ? (
+                {filesLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-16 text-center text-sm text-slate-500">
+                      {t("kbLoading")}
+                    </td>
+                  </tr>
+                ) : files.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-16 text-center text-sm text-slate-500">
                       {t("kbFileNoResults")}
                     </td>
                   </tr>
                 ) : (
-                  paginated.map((file) => (
+                  files.map((file) => (
                     <tr
                       key={file.id}
                       className={libraryTableRow}
@@ -275,16 +397,18 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <span className="inline-flex items-center gap-1.5 text-slate-600">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          {t("kbFileStatusAvailable")}
+                          <span
+                            className={cls("h-1.5 w-1.5 rounded-full", getFileStatusDotClass(file.status))}
+                          />
+                          {getFileStatusLabel(file.status, t)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {t("kbFileCharCount", { count: file.charCount })}
+                        {t("kbFileCharCount", { count: file.charCount ?? 0 })}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{file.format}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{file.format ?? "—"}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {formatDateTime(file.uploadedAt, locale)}
+                        {file.uploadedAt ? formatDateTime(file.uploadedAt, locale) : "—"}
                       </td>
                     </tr>
                   ))
@@ -294,11 +418,11 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-4 border-t border-slate-100 px-4 py-3 text-sm text-slate-500">
-            <span>{t("kbTotalItems", { count: filtered.length })}</span>
+            <span>{t("kbTotalItems", { count: total })}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                disabled={currentPage <= 1}
+                disabled={currentPage <= 1 || filesLoading}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 className={libraryPaginationBtn}
                 aria-label={t("kbPrevPage")}
@@ -310,7 +434,7 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
               </span>
               <button
                 type="button"
-                disabled={currentPage >= totalPages}
+                disabled={currentPage >= totalPages || filesLoading}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 className={libraryPaginationBtn}
                 aria-label={t("kbNextPage")}
