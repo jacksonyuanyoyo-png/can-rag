@@ -1,6 +1,11 @@
 import { apiRequest } from './api-client'
 import { API_PREFIX } from './config'
-import { buildImportJobPayload, buildImportRetryOptions } from './kb-utils'
+import {
+  buildImportJobPayload,
+  buildImportRetryOptions,
+  type ImportChunkingPayload,
+} from './kb-utils'
+import { resolveStorageUploadUrl } from './upload-url'
 import type { ImportJob, PresignUploadItem } from './types'
 
 const TERMINAL_IMPORT_STATUSES = new Set(['completed', 'failed', 'cancelled'])
@@ -18,7 +23,7 @@ export async function presignUploads(
 
 export async function completeUpload(
   uploadId: string,
-  body: { fileId: string; storageKey: string; etag: string },
+  body: { fileId: string; storageKey: string; etag?: string },
 ) {
   return apiRequest<{ fileId: string; status: string }>(
     `${API_PREFIX}/uploads/${uploadId}:complete`,
@@ -33,11 +38,7 @@ export async function createImportJob(
   kbId: string,
   options: {
     fileIds: string[]
-    chunkStrategy: string
-    metaFilename: boolean
-    metaHeadings: boolean
-    chunkSize?: number
-    chunkOverlap?: number
+    chunking: ImportChunkingPayload
   },
 ) {
   return apiRequest<ImportJob>(`${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`, {
@@ -51,16 +52,7 @@ export async function getImportJob(jobId: string) {
   return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}`)
 }
 
-export async function retryImportJob(
-  jobId: string,
-  options: {
-    chunkStrategy: string
-    metaFilename: boolean
-    metaHeadings: boolean
-    chunkSize?: number
-    chunkOverlap?: number
-  },
-) {
+export async function retryImportJob(jobId: string, options: { chunking: ImportChunkingPayload }) {
   return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}:retry`, {
     method: 'POST',
     body: buildImportRetryOptions(options),
@@ -82,10 +74,17 @@ export async function putFileToUploadUrl(
   uploadUrl: string,
   file: File,
   headers: Record<string, string> = {},
+  storageKey?: string,
 ): Promise<string> {
-  const response = await fetch(uploadUrl, {
+  const resolvedUrl = resolveStorageUploadUrl(uploadUrl)
+  const putHeaders: Record<string, string> = { ...headers }
+  if (storageKey) {
+    putHeaders['X-Storage-Key'] = storageKey
+  }
+
+  const response = await fetch(resolvedUrl, {
     method: 'PUT',
-    headers,
+    headers: putHeaders,
     body: file,
   })
   if (!response.ok) {
@@ -133,13 +132,7 @@ export async function pollImportJob(
 export async function uploadAndImportFiles(
   kbId: string,
   files: File[],
-  importOptions: {
-    chunkStrategy: string
-    metaFilename: boolean
-    metaHeadings: boolean
-    chunkSize?: number
-    chunkOverlap?: number
-  },
+  importOptions: { chunking: ImportChunkingPayload },
   hooks: {
     onUploadProgress?: (completed: number, total: number) => void
     onImportUpdate?: (job: ImportJob) => void
@@ -162,7 +155,12 @@ export async function uploadAndImportFiles(
   for (let i = 0; i < uploads.length; i += 1) {
     const upload = uploads[i]
     const file = files[i]
-    const etag = await putFileToUploadUrl(upload.uploadUrl, file, upload.headers ?? {})
+    const etag = await putFileToUploadUrl(
+      upload.uploadUrl,
+      file,
+      upload.headers ?? {},
+      upload.storageKey,
+    )
     await completeUpload(upload.uploadId, {
       fileId: upload.fileId,
       storageKey: upload.storageKey,
@@ -174,7 +172,7 @@ export async function uploadAndImportFiles(
 
   const { data: job } = await createImportJob(kbId, {
     fileIds,
-    ...importOptions,
+    chunking: importOptions.chunking,
   })
 
   return pollImportJob(job.id, {

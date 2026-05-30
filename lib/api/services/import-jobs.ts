@@ -14,9 +14,11 @@ export interface CreateImportJobInput {
   chunkSize?: number
   chunkOverlap?: number
   metadata?: ImportJobMetadata
+  chunking?: Record<string, unknown>
 }
 
 export interface RetryImportJobInput {
+  chunking?: Record<string, unknown>
   options?: {
     chunkStrategy?: string
     chunkSize?: number
@@ -25,15 +27,32 @@ export interface RetryImportJobInput {
   }
 }
 
+function legacyChunking(input: CreateImportJobInput): Record<string, unknown> {
+  const strategy = input.chunkStrategy ?? 'default'
+  const metadata = {
+    includeFileName: input.metadata?.includeFileName ?? true,
+    includeHeadings: input.metadata?.includeHeadings ?? false,
+  }
+  if (strategy === 'custom' && input.chunkSize != null) {
+    return {
+      strategy: 'custom',
+      custom: { mode: 'length' },
+      length: {
+        chunkSize: input.chunkSize,
+        overlap: input.chunkOverlap ?? 0,
+        maxChunkSize: input.chunkSize,
+      },
+      metadata,
+    }
+  }
+  return { strategy, metadata }
+}
+
 export const importJobsService = {
   async create(kbId: string, input: CreateImportJobInput): Promise<ImportJob> {
     const body = buildImportJobPayload({
       fileIds: input.fileIds,
-      chunkStrategy: input.chunkStrategy ?? 'default',
-      metaFilename: input.metadata?.includeFileName ?? true,
-      metaHeadings: input.metadata?.includeHeadings ?? false,
-      chunkSize: input.chunkSize,
-      chunkOverlap: input.chunkOverlap,
+      chunking: input.chunking ?? legacyChunking(input),
     })
     const result = await apiRequest<ImportJob>(`${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`, {
       method: 'POST',
@@ -56,15 +75,19 @@ export const importJobsService = {
   },
 
   async retry(jobId: string, input?: RetryImportJobInput): Promise<ImportJob> {
-    const body = input?.options
-      ? buildImportRetryOptions({
-          chunkStrategy: input.options.chunkStrategy ?? 'default',
-          metaFilename: input.options.metadata?.includeFileName ?? true,
-          metaHeadings: input.options.metadata?.includeHeadings ?? false,
-          chunkSize: input.options.chunkSize,
-          chunkOverlap: input.options.chunkOverlap,
-        })
-      : {}
+    const body = input?.chunking
+      ? buildImportRetryOptions({ chunking: input.chunking })
+      : input?.options
+        ? buildImportRetryOptions({
+            chunking: legacyChunking({
+              fileIds: [],
+              chunkStrategy: input.options.chunkStrategy,
+              chunkSize: input.options.chunkSize,
+              chunkOverlap: input.options.chunkOverlap,
+              metadata: input.options.metadata,
+            }),
+          })
+        : {}
     const result = await apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}:retry`, {
       method: 'POST',
       body,

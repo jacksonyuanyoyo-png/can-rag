@@ -34,6 +34,12 @@ import {
 } from "./libraryUi"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
+import CustomChunkSettings from "./import/CustomChunkSettings"
+import {
+  DEFAULT_CUSTOM_CHUNK_CONFIG,
+  DEFAULT_CUSTOM_CHUNK_MODE,
+  buildChunkingPayload,
+} from "./import/customChunkConfig"
 import { cls } from "./utils"
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024
@@ -149,6 +155,10 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   const [notFound, setNotFound] = useState(false)
 
   const [chunkStrategy, setChunkStrategy] = useState("default")
+  const [customChunkMode, setCustomChunkMode] = useState(DEFAULT_CUSTOM_CHUNK_MODE)
+  const [customChunkConfig, setCustomChunkConfig] = useState(() => ({
+    ...DEFAULT_CUSTOM_CHUNK_CONFIG,
+  }))
   const [metaFilename, setMetaFilename] = useState(true)
   const [metaHeadings, setMetaHeadings] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -263,11 +273,14 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
     mergeFiles(list)
   }
 
-  const importOptions = () => ({
-    chunkStrategy,
-    metaFilename,
-    metaHeadings,
-  })
+  const importOptions = () =>
+    buildChunkingPayload({
+      chunkStrategy,
+      customChunkMode,
+      customChunkConfig,
+      metaFilename,
+      metaHeadings,
+    })
 
   const runImport = async (files, existingJobId = null) => {
     setSubmitting(true)
@@ -577,6 +590,17 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     onChange={() => setChunkStrategy("page")}
                   />
                 </div>
+
+                {chunkStrategy === "custom" ? (
+                  <CustomChunkSettings
+                    mode={customChunkMode}
+                    onModeChange={setCustomChunkMode}
+                    values={customChunkConfig}
+                    onValuesChange={setCustomChunkConfig}
+                    disabled={submitting}
+                    t={t}
+                  />
+                ) : null}
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                   <FormLabel>{t("kbImportChunkMeta")}</FormLabel>

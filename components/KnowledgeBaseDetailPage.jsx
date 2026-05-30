@@ -386,9 +386,12 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                         <div className="flex items-center gap-3">
                           <FileIcon />
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-medium tracking-tight text-slate-800">
+                            <Link
+                              href={`/library/${kbId}/files/${file.id}`}
+                              className="theme-link block truncate text-sm font-medium tracking-tight text-slate-800 hover:text-[var(--fi-primary)]"
+                            >
                               {file.name}
-                            </div>
+                            </Link>
                             <div className="truncate text-[11px] text-slate-500" title={file.id}>
                               {truncateId(file.id)}
                             </div>

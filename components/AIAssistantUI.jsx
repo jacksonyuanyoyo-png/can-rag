@@ -38,11 +38,13 @@ export default function AIAssistantUI() {
   const isLibraryList = pathname === "/library"
   const isLibraryCreate = pathname === "/library/create"
   const isLibraryImport = /^\/library\/[^/]+\/import$/.test(pathname ?? "")
+  const isLibraryFileDetail = /^\/library\/[^/]+\/files\/[^/]+$/.test(pathname ?? "")
   const isLibraryDetail =
     /^\/library\/[^/]+$/.test(pathname ?? "") &&
     pathname !== "/library/create" &&
-    !isLibraryImport
-  const isLibrary = isLibraryList || isLibraryDetail || isLibraryCreate || isLibraryImport
+    !isLibraryImport &&
+    !isLibraryFileDetail
+  const isLibrary = isLibraryList || isLibraryDetail || isLibraryCreate || isLibraryImport || isLibraryFileDetail
   const [mounted, setMounted] = useState(false)
   const [selectedModel, setSelectedModel] = useState("gpt-5")
   const [models, setModels] = useState([])
@@ -705,6 +707,8 @@ export default function AIAssistantUI() {
             <KnowledgeBaseCreatePage embedded />
           ) : isLibraryImport ? (
             <KnowledgeBaseImportPage embedded />
+          ) : isLibraryFileDetail ? (
+            <KnowledgeBaseFileDetailPage embedded />
           ) : isLibraryDetail ? (
             <KnowledgeBaseDetailPage embedded />
           ) : (

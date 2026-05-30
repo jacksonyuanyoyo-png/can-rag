@@ -34,46 +34,20 @@ export function getFileStatusTone(status: string): FileStatusTone {
   }
 }
 
+export type ImportChunkingPayload = Record<string, unknown>
+
 export function buildImportJobPayload(options: {
   fileIds: string[]
-  chunkStrategy: string
-  metaFilename: boolean
-  metaHeadings: boolean
-  chunkSize?: number
-  chunkOverlap?: number
+  chunking: ImportChunkingPayload
 }) {
-  const payload: Record<string, unknown> = {
+  return {
     fileIds: options.fileIds,
-    chunkStrategy: options.chunkStrategy,
-    metadata: {
-      includeFileName: options.metaFilename,
-      includeHeadings: options.metaHeadings,
-    },
+    chunking: options.chunking,
   }
-  if (options.chunkStrategy === 'custom') {
-    payload.chunkSize = options.chunkSize ?? 800
-    payload.chunkOverlap = options.chunkOverlap ?? 120
-  }
-  return payload
 }
 
 export function buildImportRetryOptions(options: {
-  chunkStrategy: string
-  metaFilename: boolean
-  metaHeadings: boolean
-  chunkSize?: number
-  chunkOverlap?: number
+  chunking: ImportChunkingPayload
 }) {
-  const payload: Record<string, unknown> = {
-    chunkStrategy: options.chunkStrategy,
-    metadata: {
-      includeFileName: options.metaFilename,
-      includeHeadings: options.metaHeadings,
-    },
-  }
-  if (options.chunkStrategy === 'custom') {
-    payload.chunkSize = options.chunkSize ?? 800
-    payload.chunkOverlap = options.chunkOverlap ?? 120
-  }
-  return { options: payload }
+  return { chunking: options.chunking }
 }

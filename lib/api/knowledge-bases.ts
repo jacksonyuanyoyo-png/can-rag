@@ -1,7 +1,14 @@
 import { apiPaginatedRequest, apiRequest, apiVoidRequest } from './api-client'
 import { API_PREFIX } from './config'
 import { normalizeKnowledgeBase } from './kb-utils'
-import type { IndexStats, KnowledgeBase, KnowledgeBaseFile, ListQuery } from './types'
+import type {
+  FileChunk,
+  FileChunkDetailResult,
+  IndexStats,
+  KnowledgeBase,
+  KnowledgeBaseFile,
+  ListQuery,
+} from './types'
 
 export async function listKnowledgeBases(query: ListQuery = {}) {
   const result = await apiPaginatedRequest<KnowledgeBase>(
@@ -51,4 +58,31 @@ export async function listKnowledgeBaseFiles(kbId: string, query: ListQuery = {}
 
 export async function getKnowledgeBaseIndexStats(kbId: string) {
   return apiRequest<IndexStats>(`${API_PREFIX}/knowledge-bases/${kbId}/index-stats`)
+}
+
+export async function getKnowledgeBaseFile(kbId: string, fileId: string) {
+  return apiRequest<KnowledgeBaseFile>(`${API_PREFIX}/knowledge-bases/${kbId}/files/${fileId}`)
+}
+
+export async function listKnowledgeBaseFileChunks(
+  kbId: string,
+  fileId: string,
+  query: ListQuery = {},
+) {
+  return apiPaginatedRequest<FileChunk>(
+    `${API_PREFIX}/knowledge-bases/${kbId}/files/${fileId}/chunks`,
+    { query },
+  )
+}
+
+export async function getKnowledgeBaseFileChunkDetail(
+  kbId: string,
+  fileId: string,
+  dataId: string,
+  context = 2,
+) {
+  return apiRequest<FileChunkDetailResult>(
+    `${API_PREFIX}/knowledge-bases/${kbId}/files/${fileId}/chunks/${dataId}`,
+    { query: { context } },
+  )
 }

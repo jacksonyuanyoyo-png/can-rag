@@ -1,5 +1,6 @@
 import { apiRequest } from '../api-client'
 import { API_PREFIX } from '../config'
+import { resolveStorageUploadUrl } from '../upload-url'
 import type { PresignUploadItem } from '../types'
 
 export interface PresignFileInput {
@@ -44,11 +45,17 @@ export const uploadsService = {
     uploadUrl: string,
     file: Blob,
     headers?: Record<string, string>,
+    storageKey?: string,
   ): Promise<string> {
-    const response = await fetch(uploadUrl, {
+    const resolvedUrl = resolveStorageUploadUrl(uploadUrl)
+    const putHeaders: Record<string, string> = { ...(headers ?? {}) }
+    if (storageKey) {
+      putHeaders['X-Storage-Key'] = storageKey
+    }
+    const response = await fetch(resolvedUrl, {
       method: 'PUT',
       body: file,
-      headers,
+      headers: putHeaders,
     })
     if (!response.ok) {
       throw new Error(`Storage upload failed: ${response.status}`)

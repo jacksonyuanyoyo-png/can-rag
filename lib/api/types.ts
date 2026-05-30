@@ -143,6 +143,36 @@ export interface KnowledgeBaseFile {
   errorMessage?: string | null
 }
 
+export interface FileChunkIndex {
+  indexId: string
+  text: string
+}
+
+export interface FileChunk {
+  dataId: string
+  text: string
+  charCount: number
+  page?: number | null
+  chunkIndex: number
+  citation?: Record<string, unknown>
+  indexes?: FileChunkIndex[]
+}
+
+export interface FileChunkContextItem {
+  dataId: string
+  chunkIndex: number
+  page?: number | null
+  text: string
+}
+
+export interface FileChunkDetailResult {
+  target: FileChunk
+  context: {
+    before: FileChunkContextItem[]
+    after: FileChunkContextItem[]
+  }
+}
+
 export interface IndexStats {
   status: string
   fileCount: number
