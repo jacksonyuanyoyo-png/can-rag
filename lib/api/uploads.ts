@@ -3,7 +3,7 @@ import { API_PREFIX } from './config'
 import {
   buildImportJobPayload,
   buildImportRetryOptions,
-  type ImportChunkingPayload,
+  type ImportJobOptions,
 } from './kb-utils'
 import { resolveStorageUploadUrl } from './upload-url'
 import type { ImportJob, PresignUploadItem } from './types'
@@ -38,8 +38,7 @@ export async function createImportJob(
   kbId: string,
   options: {
     fileIds: string[]
-    chunking: ImportChunkingPayload
-  },
+  } & ImportJobOptions,
 ) {
   return apiRequest<ImportJob>(`${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`, {
     method: 'POST',
@@ -52,7 +51,7 @@ export async function getImportJob(jobId: string) {
   return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}`)
 }
 
-export async function retryImportJob(jobId: string, options: { chunking: ImportChunkingPayload }) {
+export async function retryImportJob(jobId: string, options: ImportJobOptions) {
   return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}:retry`, {
     method: 'POST',
     body: buildImportRetryOptions(options),
@@ -132,7 +131,7 @@ export async function pollImportJob(
 export async function uploadAndImportFiles(
   kbId: string,
   files: File[],
-  importOptions: { chunking: ImportChunkingPayload },
+  importOptions: ImportJobOptions,
   hooks: {
     onUploadProgress?: (completed: number, total: number) => void
     onImportUpdate?: (job: ImportJob) => void
@@ -173,6 +172,7 @@ export async function uploadAndImportFiles(
   const { data: job } = await createImportJob(kbId, {
     fileIds,
     chunking: importOptions.chunking,
+    parsing: importOptions.parsing,
   })
 
   return pollImportJob(job.id, {

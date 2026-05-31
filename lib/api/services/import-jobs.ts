@@ -1,6 +1,6 @@
 import { apiRequest } from '../api-client'
 import { API_PREFIX } from '../config'
-import { buildImportJobPayload, buildImportRetryOptions } from '../kb-utils'
+import { buildImportJobPayload, buildImportRetryOptions, type ImportJobOptions } from '../kb-utils'
 import type { ImportJob } from '../types'
 
 export interface ImportJobMetadata {
@@ -15,10 +15,12 @@ export interface CreateImportJobInput {
   chunkOverlap?: number
   metadata?: ImportJobMetadata
   chunking?: Record<string, unknown>
+  parsing?: ImportJobOptions['parsing']
 }
 
 export interface RetryImportJobInput {
   chunking?: Record<string, unknown>
+  parsing?: ImportJobOptions['parsing']
   options?: {
     chunkStrategy?: string
     chunkSize?: number
@@ -53,6 +55,7 @@ export const importJobsService = {
     const body = buildImportJobPayload({
       fileIds: input.fileIds,
       chunking: input.chunking ?? legacyChunking(input),
+      parsing: input.parsing,
     })
     const result = await apiRequest<ImportJob>(`${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`, {
       method: 'POST',
@@ -76,7 +79,7 @@ export const importJobsService = {
 
   async retry(jobId: string, input?: RetryImportJobInput): Promise<ImportJob> {
     const body = input?.chunking
-      ? buildImportRetryOptions({ chunking: input.chunking })
+      ? buildImportRetryOptions({ chunking: input.chunking, parsing: input.parsing })
       : input?.options
         ? buildImportRetryOptions({
             chunking: legacyChunking({

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Check } from "lucide-react"
+import { ArrowLeft, Check, FileText, Link2 } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
 import { getKnowledgeBase } from "@/lib/api/knowledge-bases"
 import {
@@ -31,14 +31,17 @@ import {
   libraryLink,
   primaryBtn,
   surfaceBtn,
+  surfaceInput,
 } from "./libraryUi"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import CustomChunkSettings from "./import/CustomChunkSettings"
+import BasicParseSettings from "./import/BasicParseSettings"
 import {
   DEFAULT_CUSTOM_CHUNK_CONFIG,
   DEFAULT_CUSTOM_CHUNK_MODE,
   buildChunkingPayload,
+  buildImportPayload,
 } from "./import/customChunkConfig"
 import { cls } from "./utils"
 
@@ -116,6 +119,36 @@ function FormLabel({ children, required, htmlFor }) {
   )
 }
 
+function SourceTypeCard({ id, name, icon: Icon, label, description, checked, onChange, disabled }) {
+  return (
+    <label
+      htmlFor={id}
+      className={cls(
+        "flex min-w-0 flex-1 gap-3 rounded-2xl border p-4 transition-colors",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        checked ? libraryChunkRadioChecked : libraryChunkRadio,
+      )}
+    >
+      <input
+        id={id}
+        type="radio"
+        name={name}
+        className="sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+      />
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-slate-50">
+        <Icon className="h-4 w-4 text-[var(--fi-primary)]" strokeWidth={1.5} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-slate-800">{label}</span>
+        <span className="mt-1 block text-xs leading-relaxed text-slate-500">{description}</span>
+      </span>
+    </label>
+  )
+}
+
 function ChunkRadio({ id, name, label, description, checked, onChange, disabled }) {
   return (
     <label
@@ -154,7 +187,10 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   const [kbLoading, setKbLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
+  const [sourceType, setSourceType] = useState("file")
+  const [webUrl, setWebUrl] = useState("")
   const [chunkStrategy, setChunkStrategy] = useState("default")
+  const [parseLayout, setParseLayout] = useState(false)
   const [customChunkMode, setCustomChunkMode] = useState(DEFAULT_CUSTOM_CHUNK_MODE)
   const [customChunkConfig, setCustomChunkConfig] = useState(() => ({
     ...DEFAULT_CUSTOM_CHUNK_CONFIG,
@@ -173,6 +209,16 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
 
   const ACCEPT =
     ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.csv,.xls,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
+
+  const hasPdfFiles =
+    sourceType === "file" &&
+    pickedFiles.some(
+      (f) => f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf",
+    )
+
+  useEffect(() => {
+    if (!hasPdfFiles) setParseLayout(false)
+  }, [hasPdfFiles])
 
   useEffect(() => {
     if (!kbId) return
@@ -274,12 +320,13 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   }
 
   const importOptions = () =>
-    buildChunkingPayload({
+    buildImportPayload({
       chunkStrategy,
       customChunkMode,
       customChunkConfig,
       metaFilename,
       metaHeadings,
+      pdfEnhancement: parseLayout,
     })
 
   const runImport = async (files, existingJobId = null) => {
@@ -456,6 +503,52 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
 
           <form className={cls(libraryFormCard, "space-y-10")} onSubmit={(e) => e.preventDefault()}>
             <section className={FORM_GRID}>
+              <FormLabel required>{t("kbImportSourceType")}</FormLabel>
+              <div
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                role="radiogroup"
+                aria-label={t("kbImportSourceType")}
+              >
+                <SourceTypeCard
+                  id="source-file"
+                  name="source-type"
+                  icon={FileText}
+                  label={t("kbImportSourceFile")}
+                  description={t("kbImportSourceFileDesc")}
+                  checked={sourceType === "file"}
+                  disabled={submitting}
+                  onChange={() => setSourceType("file")}
+                />
+                <SourceTypeCard
+                  id="source-url"
+                  name="source-type"
+                  icon={Link2}
+                  label={t("kbImportSourceUrl")}
+                  description={t("kbImportSourceUrlDesc")}
+                  checked={sourceType === "url"}
+                  disabled={submitting}
+                  onChange={() => setSourceType("url")}
+                />
+              </div>
+            </section>
+
+            {sourceType === "url" ? (
+              <section className={FORM_GRID}>
+                <FormLabel htmlFor="web-url">{t("kbImportWebUrlLabel")}</FormLabel>
+                <input
+                  id="web-url"
+                  type="url"
+                  value={webUrl}
+                  onChange={(e) => setWebUrl(e.target.value)}
+                  placeholder={t("kbImportWebUrlPlaceholder")}
+                  disabled={submitting}
+                  className={cls("w-full px-3.5", surfaceInput)}
+                />
+              </section>
+            ) : null}
+
+            {sourceType === "file" ? (
+            <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportUploadSection")}</SectionTitle>
 
               <div className="hidden sm:block" aria-hidden />
@@ -541,6 +634,21 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                 ) : null}
                 <p className="mt-3 text-[11px] text-slate-400">{t("kbImportUploadLimit")}</p>
               </div>
+            </section>
+            ) : null}
+
+            <section className={FORM_GRID}>
+              <SectionTitle>{t("kbImportParseTitle")}</SectionTitle>
+
+              <FormLabel>{t("kbImportBasicTitle")}</FormLabel>
+              <BasicParseSettings
+                sourceType={sourceType}
+                layout={parseLayout}
+                onLayoutChange={setParseLayout}
+                layoutDisabled={!hasPdfFiles}
+                disabled={submitting}
+                t={t}
+              />
             </section>
 
             <section className={FORM_GRID}>
@@ -632,7 +740,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
               <div className="col-span-full flex flex-wrap items-center gap-2 sm:col-start-2 sm:gap-3">
                 <button
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || sourceType === "url"}
                   onClick={handleConfirm}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",

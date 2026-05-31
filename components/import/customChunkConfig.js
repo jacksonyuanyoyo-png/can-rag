@@ -104,6 +104,32 @@ export function buildChunkingPayload({
   }
 }
 
+/** Maps UI import settings to POST /v1/knowledge-bases/{kbId}/import-jobs body. */
+export function buildImportPayload({
+  chunkStrategy,
+  customChunkMode,
+  customChunkConfig,
+  metaFilename,
+  metaHeadings,
+  pdfEnhancement = false,
+}) {
+  const { chunking } = buildChunkingPayload({
+    chunkStrategy,
+    customChunkMode,
+    customChunkConfig,
+    metaFilename,
+    metaHeadings,
+  })
+
+  return {
+    chunking,
+    parsing: {
+      textExtraction: true,
+      pdfEnhancement: pdfEnhancement === true,
+    },
+  }
+}
+
 /** @deprecated Use buildChunkingPayload; kept for callers that only need length/overlap. */
 export function resolveCustomChunkForApi(mode, config) {
   if (mode === "length") {

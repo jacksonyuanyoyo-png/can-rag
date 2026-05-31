@@ -36,18 +36,37 @@ export function getFileStatusTone(status: string): FileStatusTone {
 
 export type ImportChunkingPayload = Record<string, unknown>
 
+export type ImportParsingPayload = {
+  textExtraction: boolean
+  pdfEnhancement: boolean
+}
+
+export type ImportJobOptions = {
+  chunking: ImportChunkingPayload
+  parsing?: ImportParsingPayload
+}
+
 export function buildImportJobPayload(options: {
   fileIds: string[]
   chunking: ImportChunkingPayload
+  parsing?: ImportParsingPayload
 }) {
   return {
     fileIds: options.fileIds,
     chunking: options.chunking,
+    parsing: options.parsing ?? {
+      textExtraction: true,
+      pdfEnhancement: false,
+    },
   }
 }
 
-export function buildImportRetryOptions(options: {
-  chunking: ImportChunkingPayload
-}) {
-  return { chunking: options.chunking }
+export function buildImportRetryOptions(options: ImportJobOptions) {
+  return {
+    chunking: options.chunking,
+    parsing: options.parsing ?? {
+      textExtraction: true,
+      pdfEnhancement: false,
+    },
+  }
 }
