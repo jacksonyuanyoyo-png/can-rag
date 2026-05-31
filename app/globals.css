@@ -220,3 +220,19 @@ html[data-locale='en'] {
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }
+
+@keyframes import-progress-shimmer {
+  0% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.75;
+  }
+}
+
+.import-progress-indeterminate [data-slot='progress-indicator'] {
+  animation: import-progress-shimmer 1.6s ease-in-out infinite;
+}

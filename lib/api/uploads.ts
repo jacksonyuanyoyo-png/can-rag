@@ -5,6 +5,7 @@ import {
   buildImportRetryOptions,
   type ImportJobOptions,
 } from './kb-utils'
+import { normalizeImportJob } from './import-job-utils'
 import { resolveStorageUploadUrl } from './upload-url'
 import type { ImportJob, PresignUploadItem } from './types'
 
@@ -40,29 +41,42 @@ export async function createImportJob(
     fileIds: string[]
   } & ImportJobOptions,
 ) {
-  return apiRequest<ImportJob>(`${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`, {
-    method: 'POST',
-    body: buildImportJobPayload(options),
-    idempotencyKey: `import-${kbId}-${options.fileIds.join('-')}-${Date.now()}`,
-  })
+  const result = await apiRequest<Record<string, unknown>>(
+    `${API_PREFIX}/knowledge-bases/${kbId}/import-jobs`,
+    {
+      method: 'POST',
+      body: buildImportJobPayload(options),
+      idempotencyKey: `import-${kbId}-${options.fileIds.join('-')}-${Date.now()}`,
+    },
+  )
+  return { ...result, data: normalizeImportJob(result.data ?? {}) }
 }
 
 export async function getImportJob(jobId: string) {
-  return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}`)
+  const result = await apiRequest<Record<string, unknown>>(`${API_PREFIX}/import-jobs/${jobId}`)
+  return { ...result, data: normalizeImportJob(result.data ?? {}) }
 }
 
 export async function retryImportJob(jobId: string, options: ImportJobOptions) {
-  return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}:retry`, {
-    method: 'POST',
-    body: buildImportRetryOptions(options),
-  })
+  const result = await apiRequest<Record<string, unknown>>(
+    `${API_PREFIX}/import-jobs/${jobId}:retry`,
+    {
+      method: 'POST',
+      body: buildImportRetryOptions(options),
+    },
+  )
+  return { ...result, data: normalizeImportJob(result.data ?? {}) }
 }
 
 export async function cancelImportJob(jobId: string) {
-  return apiRequest<ImportJob>(`${API_PREFIX}/import-jobs/${jobId}:cancel`, {
-    method: 'POST',
-    body: {},
-  })
+  const result = await apiRequest<Record<string, unknown>>(
+    `${API_PREFIX}/import-jobs/${jobId}:cancel`,
+    {
+      method: 'POST',
+      body: {},
+    },
+  )
+  return { ...result, data: normalizeImportJob(result.data ?? {}) }
 }
 
 export function isImportJobTerminal(status: string): boolean {
@@ -104,7 +118,7 @@ export async function pollImportJob(
     signal?: AbortSignal
   } = {},
 ): Promise<ImportJob> {
-  const intervalMs = options.intervalMs ?? 2000
+  const intervalMs = options.intervalMs ?? 1500
   while (true) {
     if (options.signal?.aborted) {
       throw new Error('Import polling cancelled')

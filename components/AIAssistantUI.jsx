@@ -10,6 +10,7 @@ import LibraryPage from "./LibraryPage"
 import KnowledgeBaseDetailPage from "./KnowledgeBaseDetailPage"
 import KnowledgeBaseCreatePage from "./KnowledgeBaseCreatePage"
 import KnowledgeBaseImportPage from "./KnowledgeBaseImportPage"
+import KnowledgeBaseFileDetailPage from "./KnowledgeBaseFileDetailPage"
 import GhostIconButton from "./GhostIconButton"
 import { Menu } from "./icons/FidelityIcons"
 import { useLocale } from "./LocaleProvider"
@@ -22,6 +23,7 @@ import {
   templatesService,
 } from "@/lib/api/services"
 import { ApiError } from "@/lib/api/api-error"
+import { resolveMessageCreatedPair } from "@/lib/api/sse"
 import { useApiError } from "@/hooks/useApiError"
 import { useAuth } from "@/components/providers/AuthProvider"
 
@@ -47,6 +49,7 @@ export default function AIAssistantUI() {
   const isLibrary = isLibraryList || isLibraryDetail || isLibraryCreate || isLibraryImport || isLibraryFileDetail
   const [mounted, setMounted] = useState(false)
   const [selectedModel, setSelectedModel] = useState("gpt-5")
+  const [selectedKnowledgeBaseIds, setSelectedKnowledgeBaseIds] = useState([])
   const [models, setModels] = useState([])
   const [dataLoaded, setDataLoaded] = useState(false)
 
@@ -416,21 +419,36 @@ export default function AIAssistantUI() {
     streamAbortRef.current = null
   }
 
+  function buildMessageBody(content) {
+    const body = { content, modelId: selectedModel }
+    if (selectedKnowledgeBaseIds.length > 0) {
+      body.knowledgeBaseIds = selectedKnowledgeBaseIds
+    }
+    return body
+  }
+
   async function sendMessageStream(convId, content) {
     const controller = new AbortController()
     streamAbortRef.current = controller
 
     await messagesService.stream(
       convId,
-      { content, modelId: selectedModel },
+      buildMessageBody(content),
       {
-        onMessageCreated: ({ userMessage, assistantMessage }) => {
+        onMessageCreated: (data) => {
+          const pair = resolveMessageCreatedPair(data, content)
+          if (!pair) return
+
+          const { userMessage, assistantMessage } = pair
           streamingAssistantIdRef.current = assistantMessage.id
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== convId) return c
+              const withoutOptimistic = (c.messages || []).filter(
+                (m) => !String(m.id).startsWith("opt-user-"),
+              )
               const msgs = [
-                ...(c.messages || []),
+                ...withoutOptimistic,
                 userMessage,
                 {
                   ...assistantMessage,
@@ -513,11 +531,14 @@ export default function AIAssistantUI() {
   }
 
   async function sendMessageNonStream(convId, content) {
-    const result = await messagesService.send(convId, { content, modelId: selectedModel })
+    const result = await messagesService.send(convId, buildMessageBody(content))
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c
-        const msgs = [...(c.messages || []), result.userMessage, result.assistantMessage]
+        const withoutOptimistic = (c.messages || []).filter(
+          (m) => !String(m.id).startsWith("opt-user-"),
+        )
+        const msgs = [...withoutOptimistic, result.userMessage, result.assistantMessage]
         return {
           ...c,
           messages: msgs,
@@ -531,17 +552,34 @@ export default function AIAssistantUI() {
   }
 
   async function sendMessage(convId, content) {
-    if (!content.trim() || !selectedModel) return
+    const trimmed = content.trim()
+    if (!trimmed || !selectedModel) return
+
+    const optimisticUserId = `opt-user-${Date.now()}`
+    const now = new Date().toISOString()
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c
+        const existing = c.messages || []
+        if (existing.length > 0) return c
+        return {
+          ...c,
+          messages: [{ id: optimisticUserId, role: "user", content: trimmed, createdAt: now }],
+          preview: trimmed.slice(0, 80),
+        }
+      }),
+    )
 
     setIsThinking(true)
     setThinkingConvId(convId)
 
     try {
       if (messagesService.isStreamEnabled()) {
-        await sendMessageStream(convId, content)
+        await sendMessageStream(convId, trimmed)
         clearGeneratingState()
       } else {
-        await sendMessageNonStream(convId, content)
+        await sendMessageNonStream(convId, trimmed)
       }
     } catch (error) {
       clearGeneratingState()
@@ -718,7 +756,9 @@ export default function AIAssistantUI() {
               models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
-              onSend={(content) => selected && sendMessage(selected.id, content)}
+              selectedKnowledgeBaseIds={selectedKnowledgeBaseIds}
+              onKnowledgeBaseIdsChange={setSelectedKnowledgeBaseIds}
+              onSend={(content) => (selected ? sendMessage(selected.id, content) : Promise.resolve())}
               onEditMessage={(messageId, newContent) =>
                 selected && editMessage(selected.id, messageId, newContent)
               }

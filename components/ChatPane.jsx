@@ -47,6 +47,8 @@ const ChatPane = forwardRef(function ChatPane(
     selectedModel,
     onModelChange,
     models,
+    selectedKnowledgeBaseIds,
+    onKnowledgeBaseIdsChange,
   },
   ref,
 ) {
@@ -127,7 +129,7 @@ const ChatPane = forwardRef(function ChatPane(
     }
   }
 
-  if (messages.length === 0) {
+  if (messages.length === 0 && !isThinking) {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <LandingHero
@@ -138,6 +140,8 @@ const ChatPane = forwardRef(function ChatPane(
           onSend={onSend}
           busy={busy}
           setBusy={setBusy}
+          selectedKnowledgeBaseIds={selectedKnowledgeBaseIds}
+          onKnowledgeBaseIdsChange={onKnowledgeBaseIdsChange}
         />
       </div>
     )
@@ -335,6 +339,8 @@ const ChatPane = forwardRef(function ChatPane(
         models={models}
         selectedModel={selectedModel}
         onModelChange={onModelChange}
+        selectedKnowledgeBaseIds={selectedKnowledgeBaseIds}
+        onKnowledgeBaseIdsChange={onKnowledgeBaseIdsChange}
         onSend={async (text) => {
           if (!text.trim()) return
           setBusy(true)

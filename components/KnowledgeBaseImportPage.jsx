@@ -13,6 +13,11 @@ import {
   retryImportJob,
   uploadAndImportFiles,
 } from "@/lib/api/uploads"
+import {
+  getImportStageLabel,
+  isImportProgressFromStage,
+  resolveImportProgress,
+} from "@/lib/api/import-job-utils"
 import { formatApiErrorMessage } from "@/lib/api/format-error"
 import { ApiError } from "@/lib/api/api-error"
 import { ErrorCodes } from "@/lib/api/error-codes"
@@ -432,6 +437,13 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
 
   const showUploadProgress = submitting && uploadProgress.total > 0 && !importJob
   const showImportProgress = submitting && importJob
+  const importDisplayProgress = importJob ? resolveImportProgress(importJob) : 0
+  const importStageLabel = importJob ? getImportStageLabel(importJob.stage, t) : ""
+  const importProgressIndeterminate = importJob ? isImportProgressFromStage(importJob) : false
+  const uploadDisplayProgress =
+    uploadProgress.total > 0
+      ? Math.round((uploadProgress.completed / uploadProgress.total) * 100)
+      : 0
 
   return (
     <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
@@ -480,22 +492,28 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
           {(showUploadProgress || showImportProgress) ? (
             <div className="mb-6 space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
               {showUploadProgress ? (
-                <p className="text-sm text-slate-600">
-                  {t("kbImportUploading", {
-                    completed: uploadProgress.completed,
-                    total: uploadProgress.total,
-                  })}
-                </p>
+                <>
+                  <p className="text-sm text-slate-600">
+                    {t("kbImportUploading", {
+                      completed: uploadProgress.completed,
+                      total: uploadProgress.total,
+                    })}
+                  </p>
+                  <Progress value={uploadDisplayProgress} className="h-2" />
+                </>
               ) : null}
               {showImportProgress ? (
                 <>
                   <p className="text-sm text-slate-600">
                     {t("kbImportProgress", {
-                      progress: importJob.progress ?? 0,
-                      stage: importJob.stage ?? "—",
+                      progress: importDisplayProgress,
+                      stage: importStageLabel,
                     })}
                   </p>
-                  <Progress value={importJob.progress ?? 0} className="h-2" />
+                  <Progress
+                    value={importDisplayProgress}
+                    className={cls("h-2", importProgressIndeterminate && "import-progress-indeterminate")}
+                  />
                 </>
               ) : null}
             </div>

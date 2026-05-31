@@ -25,7 +25,17 @@ const landingRevealItem = {
 }
 
 const Composer = forwardRef(function Composer(
-  { onSend, busy, landing = false, landingReveal = false, selectedModel, onModelChange, models },
+  {
+    onSend,
+    busy,
+    landing = false,
+    landingReveal = false,
+    selectedModel,
+    onModelChange,
+    models,
+    selectedKnowledgeBaseIds = [],
+    onKnowledgeBaseIdsChange,
+  },
   ref,
 ) {
   const { t } = useLocale()
@@ -78,12 +88,13 @@ const Composer = forwardRef(function Composer(
   )
 
   async function handleSend() {
-    if (!value.trim() || sending) return
+    const text = value.trim()
+    if (!text || sending) return
     setSending(true)
+    setValue("")
+    inputRef.current?.focus()
     try {
-      await onSend?.(value)
-      setValue("")
-      inputRef.current?.focus()
+      await onSend?.(text)
     } finally {
       setSending(false)
     }
@@ -128,10 +139,15 @@ const Composer = forwardRef(function Composer(
 
         <RevealSection {...revealProps} className="flex items-center justify-between px-3 pb-3">
           <div className="flex items-center gap-1">
-            <ComposerActionsPopover>
+            <ComposerActionsPopover
+              selectedIds={selectedKnowledgeBaseIds}
+              onSelectedIdsChange={onKnowledgeBaseIdsChange}
+              disabled={sending || busy}
+            >
               <button
                 className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-300"
-                title={t("addAttachment")}
+                title={t("composerKbTitle")}
+                type="button"
               >
                 <Plus className="h-5 w-5" />
               </button>

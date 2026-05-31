@@ -10,12 +10,17 @@ function createRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
+export interface MessageCreatedEvent {
+  conversationId?: string
+  userMessage?: Message
+  assistantMessage?: Message
+  userMessageId?: string
+  assistantMessageId?: string
+  content?: string
+}
+
 export interface MessageStreamHandlers {
-  onMessageCreated?: (data: {
-    conversationId?: string
-    userMessage: Message
-    assistantMessage: Message
-  }) => void
+  onMessageCreated?: (data: MessageCreatedEvent) => void
   onRetrievalStarted?: (data: { messageId: string; knowledgeBaseIds?: string[] }) => void
   onRetrievalCompleted?: (data: {
     messageId: string
@@ -32,6 +37,78 @@ export interface MessageStreamHandlers {
   onDone?: (data: { conversationId?: string; requestId?: string }) => void
 }
 
+/** Backend may send full messages or only IDs on `message.created`. */
+export function resolveMessageCreatedPair(
+  data: MessageCreatedEvent,
+  fallbackUserContent = '',
+): { userMessage: Message; assistantMessage: Message } | null {
+  if (data.userMessage && data.assistantMessage) {
+    return { userMessage: data.userMessage, assistantMessage: data.assistantMessage }
+  }
+
+  const userId = data.userMessageId
+  const assistantId = data.assistantMessageId
+  if (!userId || !assistantId) return null
+
+  const now = new Date().toISOString()
+  const userContent = data.userMessage?.content ?? data.content ?? fallbackUserContent
+
+  return {
+    userMessage: {
+      id: userId,
+      role: 'user',
+      content: userContent,
+      createdAt: data.userMessage?.createdAt ?? now,
+      editedAt: data.userMessage?.editedAt ?? null,
+    },
+    assistantMessage: {
+      id: assistantId,
+      role: 'assistant',
+      content: data.assistantMessage?.content ?? '',
+      createdAt: data.assistantMessage?.createdAt ?? now,
+      editedAt: data.assistantMessage?.editedAt ?? null,
+      status: data.assistantMessage?.status ?? 'running',
+    },
+  }
+}
+
+function buildStreamUrl(conversationId: string): string {
+  if (typeof window !== 'undefined') {
+    return `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages-stream`
+  }
+  return buildApiUrl(`${API_PREFIX}/conversations/${conversationId}/messages:stream`)
+}
+
+/** Parse complete SSE blocks separated by blank lines (handles \\r\\n). */
+function drainSseEvents(buffer: string): { events: Array<{ eventType: string; data: string }>; rest: string } {
+  const events: Array<{ eventType: string; data: string }> = []
+  const blocks = buffer.split(/\r?\n\r?\n/)
+  const rest = blocks.pop() ?? ''
+
+  for (const block of blocks) {
+    const trimmed = block.trim()
+    if (!trimmed) continue
+
+    let eventType = ''
+    const dataLines: string[] = []
+
+    for (const line of block.split(/\r?\n/)) {
+      if (!line || line.startsWith(':')) continue
+      if (line.startsWith('event:')) {
+        eventType = line.slice(6).trim()
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trimStart())
+      }
+    }
+
+    if (dataLines.length > 0) {
+      events.push({ eventType, data: dataLines.join('\n') })
+    }
+  }
+
+  return { events, rest }
+}
+
 function dispatchStreamEvent(
   eventType: string,
   data: Record<string, unknown>,
@@ -39,7 +116,7 @@ function dispatchStreamEvent(
 ): void {
   switch (eventType) {
     case 'message.created':
-      handlers.onMessageCreated?.(data as Parameters<NonNullable<MessageStreamHandlers['onMessageCreated']>>[0])
+      handlers.onMessageCreated?.(data as MessageCreatedEvent)
       break
     case 'retrieval.started':
       handlers.onRetrievalStarted?.(data as Parameters<NonNullable<MessageStreamHandlers['onRetrievalStarted']>>[0])
@@ -73,7 +150,7 @@ export async function streamConversationMessage(
   handlers: MessageStreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
-  const url = buildApiUrl(`${API_PREFIX}/conversations/${conversationId}/messages:stream`)
+  const url = buildStreamUrl(conversationId)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
@@ -90,6 +167,7 @@ export async function streamConversationMessage(
     headers,
     body: JSON.stringify(body),
     signal,
+    cache: 'no-store',
   })
 
   if (!response.ok) {
@@ -114,31 +192,33 @@ export async function streamConversationMessage(
 
   const decoder = new TextDecoder()
   let buffer = ''
-  let eventType = ''
+
+  const processEvents = (parsed: Array<{ eventType: string; data: string }>) => {
+    for (const { eventType, data: raw } of parsed) {
+      if (!raw) continue
+      try {
+        const data = JSON.parse(raw) as Record<string, unknown>
+        dispatchStreamEvent(eventType, data, handlers)
+      } catch (error) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[sse] event handler failed', eventType, error)
+        }
+      }
+    }
+  }
 
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
 
     buffer += decoder.decode(value, { stream: true })
-    const parts = buffer.split('\n')
-    buffer = parts.pop() ?? ''
+    const { events, rest } = drainSseEvents(buffer)
+    buffer = rest
+    processEvents(events)
+  }
 
-    for (const line of parts) {
-      if (line.startsWith('event:')) {
-        eventType = line.slice(6).trim()
-      } else if (line.startsWith('data:')) {
-        const raw = line.slice(5).trim()
-        if (!raw) continue
-        try {
-          const data = JSON.parse(raw) as Record<string, unknown>
-          dispatchStreamEvent(eventType, data, handlers)
-        } catch {
-          // ignore malformed SSE payloads
-        }
-      } else if (line === '') {
-        eventType = ''
-      }
-    }
+  if (buffer.trim()) {
+    const { events } = drainSseEvents(`${buffer}\n\n`)
+    processEvents(events)
   }
 }
