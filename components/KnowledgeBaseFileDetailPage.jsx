@@ -33,6 +33,7 @@ import {
   surfaceInput,
 } from "./libraryUi"
 import { cls } from "./utils"
+import KbMarkdownPreview, { markdownPreviewText } from "./KbMarkdownPreview"
 
 function ChunkListItem({ chunk, selected, expanded, onSelect, onToggle, t }) {
   return (
@@ -63,7 +64,9 @@ function ChunkListItem({ chunk, selected, expanded, onSelect, onToggle, t }) {
             ) : null}
           </div>
           {!expanded ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{chunk.text}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">
+              {markdownPreviewText(chunk.text)}
+            </p>
           ) : null}
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-emerald-600">
@@ -73,7 +76,7 @@ function ChunkListItem({ chunk, selected, expanded, onSelect, onToggle, t }) {
       </button>
       {expanded ? (
         <div className="border-t border-slate-100 px-3 py-2.5">
-          <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{chunk.text}</p>
+          <KbMarkdownPreview markdown={chunk.text} className="text-xs" />
           <button
             type="button"
             onClick={(e) => {
@@ -128,23 +131,11 @@ function OriginalTextPanel({ chunkDetail, loading, t }) {
     <div className="min-h-0 flex-1 overflow-y-auto p-4">
       <div className="mx-auto max-w-2xl space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         {context.before.map((item) => (
-          <p
-            key={item.dataId}
-            className="whitespace-pre-wrap text-sm leading-relaxed text-slate-500"
-          >
-            {item.text}
-          </p>
+          <KbMarkdownPreview key={item.dataId} markdown={item.text} muted />
         ))}
-        <p className="whitespace-pre-wrap rounded-lg bg-violet-50 px-3 py-2 text-sm leading-relaxed text-slate-800 ring-1 ring-violet-100">
-          {target.text}
-        </p>
+        <KbMarkdownPreview markdown={target.text} highlight />
         {context.after.map((item) => (
-          <p
-            key={item.dataId}
-            className="whitespace-pre-wrap text-sm leading-relaxed text-slate-500"
-          >
-            {item.text}
-          </p>
+          <KbMarkdownPreview key={item.dataId} markdown={item.text} muted />
         ))}
       </div>
     </div>
