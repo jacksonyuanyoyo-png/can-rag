@@ -37,6 +37,7 @@ import {
   truncateId,
 } from "./libraryUi"
 import { cls } from "./utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 function KnowledgeBaseIcon() {
   return (
@@ -138,10 +139,12 @@ export default function LibraryPage({ embedded = false }) {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-800 sm:text-3xl">
             {t("knowledgeBaseSection")}
           </h1>
-          <button type="button" className={cls("inline-flex items-center gap-2 px-4 py-2", surfaceBtn)}>
-            <Target className="h-4 w-4 text-slate-500" strokeWidth={1.5} />
-            {t("kbHitTest")}
-          </button>
+          {UI_VISIBILITY.kbHitTest ? (
+            <button type="button" className={cls("inline-flex items-center gap-2 px-4 py-2", surfaceBtn)}>
+              <Target className="h-4 w-4 text-slate-500" strokeWidth={1.5} />
+              {t("kbHitTest")}
+            </button>
+          ) : null}
         </header>
 
         <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

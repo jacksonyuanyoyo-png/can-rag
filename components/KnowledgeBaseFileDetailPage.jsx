@@ -32,6 +32,7 @@ import {
   surfaceBtn,
   surfaceInput,
 } from "./libraryUi"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 import { cls } from "./utils"
 import KbMarkdownPreview, { markdownPreviewText } from "./KbMarkdownPreview"
 
@@ -294,10 +295,12 @@ export default function KnowledgeBaseFileDetailPage({ embedded = false }) {
               <Settings className="h-4 w-4" strokeWidth={1.5} />
               {t("kbFileDetailConfig")}
             </button>
-            <button type="button" disabled className={cls("inline-flex items-center gap-1.5 px-3 py-2", primaryBtn, "opacity-50")}>
-              <Target className="h-4 w-4" strokeWidth={1.5} />
-              {t("kbHitTest")}
-            </button>
+            {UI_VISIBILITY.kbHitTest ? (
+              <button type="button" disabled className={cls("inline-flex items-center gap-1.5 px-3 py-2", primaryBtn, "opacity-50")}>
+                <Target className="h-4 w-4" strokeWidth={1.5} />
+                {t("kbHitTest")}
+              </button>
+            ) : null}
           </div>
         </header>
 

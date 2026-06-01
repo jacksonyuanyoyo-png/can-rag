@@ -20,6 +20,7 @@ import SearchModal from "./SearchModal"
 import SettingsPopover from "./SettingsPopover"
 import { useLocale } from "./LocaleProvider"
 import { cls } from "./utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 import { useState } from "react"
 
 export default function Sidebar({
@@ -171,13 +172,15 @@ export default function Sidebar({
             <BookOpen className="h-5 w-5" />
           </button>
 
-          <button
-            onClick={handleFoldersClick}
-            className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
-            title={t("folders")}
-          >
-            <FolderIcon className="h-5 w-5" />
-          </button>
+          {UI_VISIBILITY.sidebarFolders ? (
+            <button
+              onClick={handleFoldersClick}
+              className="theme-focus-ring rounded-full p-2.5 transition-colors hover:bg-white/55 dark:hover:bg-white/10"
+              title={t("folders")}
+            >
+              <FolderIcon className="h-5 w-5" />
+            </button>
+          ) : null}
         </div>
 
         <div className="mt-auto flex flex-col items-center gap-2 pb-4">
@@ -321,73 +324,77 @@ export default function Sidebar({
                 )}
               </SidebarSection>
 
-              <SidebarSection
-                icon={<Folder className="h-4 w-4 shrink-0 opacity-70" strokeWidth={2} aria-hidden />}
-                title={t("foldersSection")}
-                collapsed={collapsed.folders}
-                onToggle={() => setCollapsed((s) => ({ ...s, folders: !s.folders }))}
-              >
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateFolderModal(true)}
-                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
-                  >
-                    <Plus className="h-4 w-4 shrink-0" /> {t("createFolder")}
-                  </button>
+              {UI_VISIBILITY.sidebarFolders ? (
+                <SidebarSection
+                  icon={<Folder className="h-4 w-4 shrink-0 opacity-70" strokeWidth={2} aria-hidden />}
+                  title={t("foldersSection")}
+                  collapsed={collapsed.folders}
+                  onToggle={() => setCollapsed((s) => ({ ...s, folders: !s.folders }))}
+                >
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateFolderModal(true)}
+                      className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
+                    >
+                      <Plus className="h-4 w-4 shrink-0" /> {t("createFolder")}
+                    </button>
 
-                  {folders.map((f) => (
-                    <FolderRow
-                      key={f.id}
-                      name={f.name}
-                      count={folderCounts[f.name] || 0}
-                      conversations={getConversationsByFolder(f.name)}
-                      selectedId={selectedId}
-                      libraryActive={libraryActive}
-                      onSelect={onSelect}
-                      togglePin={togglePin}
-                      onRenameConversation={onRenameConversation}
-                      onDeleteConversation={onDeleteConversation}
-                      onDeleteFolder={handleDeleteFolder}
-                      onRenameFolder={handleRenameFolder}
-                    />
-                  ))}
-                </>
-              </SidebarSection>
+                    {folders.map((f) => (
+                      <FolderRow
+                        key={f.id}
+                        name={f.name}
+                        count={folderCounts[f.name] || 0}
+                        conversations={getConversationsByFolder(f.name)}
+                        selectedId={selectedId}
+                        libraryActive={libraryActive}
+                        onSelect={onSelect}
+                        togglePin={togglePin}
+                        onRenameConversation={onRenameConversation}
+                        onDeleteConversation={onDeleteConversation}
+                        onDeleteFolder={handleDeleteFolder}
+                        onRenameFolder={handleRenameFolder}
+                      />
+                    ))}
+                  </>
+                </SidebarSection>
+              ) : null}
 
-              <SidebarSection
-                icon={<FileText className="h-4 w-4 shrink-0 opacity-70" strokeWidth={2} aria-hidden />}
-                title={t("templatesSection")}
-                collapsed={collapsed.templates}
-                onToggle={() => setCollapsed((s) => ({ ...s, templates: !s.templates }))}
-              >
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateTemplateModal(true)}
-                    className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
-                  >
-                    <Plus className="h-4 w-4 shrink-0" /> {t("createTemplate")}
-                  </button>
+              {UI_VISIBILITY.sidebarTemplates ? (
+                <SidebarSection
+                  icon={<FileText className="h-4 w-4 shrink-0 opacity-70" strokeWidth={2} aria-hidden />}
+                  title={t("templatesSection")}
+                  collapsed={collapsed.templates}
+                  onToggle={() => setCollapsed((s) => ({ ...s, templates: !s.templates }))}
+                >
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateTemplateModal(true)}
+                      className="mb-2 inline-flex w-full items-center justify-start gap-2 rounded-2xl px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-white/70"
+                    >
+                      <Plus className="h-4 w-4 shrink-0" /> {t("createTemplate")}
+                    </button>
 
-                  {(Array.isArray(templates) ? templates : []).map((template) => (
-                    <TemplateRow
-                      key={template.id}
-                      template={template}
-                      onUseTemplate={handleUseTemplate}
-                      onEditTemplate={handleEditTemplate}
-                      onRenameTemplate={handleRenameTemplate}
-                      onDeleteTemplate={handleDeleteTemplate}
-                    />
-                  ))}
+                    {(Array.isArray(templates) ? templates : []).map((template) => (
+                      <TemplateRow
+                        key={template.id}
+                        template={template}
+                        onUseTemplate={handleUseTemplate}
+                        onEditTemplate={handleEditTemplate}
+                        onRenameTemplate={handleRenameTemplate}
+                        onDeleteTemplate={handleDeleteTemplate}
+                      />
+                    ))}
 
-                  {(!templates || templates.length === 0) && (
-                    <div className="select-none rounded-lg border border-dashed border-gray-300 px-4 py-3 text-center text-xs text-gray-500 dark:border-slate-700 dark:text-slate-400">
-                      {t("templatesEmpty")}
-                    </div>
-                  )}
-                </>
-              </SidebarSection>
+                    {(!templates || templates.length === 0) && (
+                      <div className="select-none rounded-lg border border-dashed border-gray-300 px-4 py-3 text-center text-xs text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                        {t("templatesEmpty")}
+                      </div>
+                    )}
+                  </>
+                </SidebarSection>
+              ) : null}
             </nav>
 
             <div className="mt-auto shrink-0 border-t border-slate-200 px-3 py-3">

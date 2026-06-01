@@ -47,6 +47,7 @@ import {
 } from "./libraryUi"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cls } from "./utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 function FileIcon() {
   return (
@@ -279,17 +280,21 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-[#5C7CFA]"
-                aria-label={t("more")}
-              >
-                <MoreHorizontal className="h-5 w-5" strokeWidth={1.5} />
-              </button>
-              <button type="button" className={cls("inline-flex items-center gap-2 px-4 py-2", surfaceBtn)}>
-                <Target className="h-4 w-4 text-slate-500" strokeWidth={1.5} />
-                {t("kbHitTest")}
-              </button>
+              {UI_VISIBILITY.kbDetailMore ? (
+                <button
+                  type="button"
+                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-[#5C7CFA]"
+                  aria-label={t("more")}
+                >
+                  <MoreHorizontal className="h-5 w-5" strokeWidth={1.5} />
+                </button>
+              ) : null}
+              {UI_VISIBILITY.kbHitTest ? (
+                <button type="button" className={cls("inline-flex items-center gap-2 px-4 py-2", surfaceBtn)}>
+                  <Target className="h-4 w-4 text-slate-500" strokeWidth={1.5} />
+                  {t("kbHitTest")}
+                </button>
+              ) : null}
             </div>
           </div>
         </header>
@@ -327,9 +332,11 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             >
               <RefreshCw className={cls("h-4 w-4", refreshing && "animate-spin")} strokeWidth={1.5} />
             </button>
-            <button type="button" className={cls("px-4 py-2", surfaceBtn)}>
-              {t("kbDetailBatch")}
-            </button>
+            {UI_VISIBILITY.kbDetailBatch ? (
+              <button type="button" className={cls("px-4 py-2", surfaceBtn)}>
+                {t("kbDetailBatch")}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => router.push(`/library/${kbId}/import`)}

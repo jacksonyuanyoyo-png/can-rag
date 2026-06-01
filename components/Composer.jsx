@@ -7,6 +7,7 @@ import ComposerActionsPopover from "./ComposerActionsPopover"
 import ModelSelector from "./ModelSelector"
 import { useLocale } from "./LocaleProvider"
 import { cls } from "./utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 const landingRevealContainer = {
   hidden: {},
@@ -156,12 +157,14 @@ const Composer = forwardRef(function Composer(
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              className="inline-flex items-center justify-center rounded-full p-2 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-300"
-              title={t("voiceInput")}
-            >
-              <Mic className="h-5 w-5" />
-            </button>
+            {UI_VISIBILITY.composerVoiceInput ? (
+              <button
+                className="inline-flex items-center justify-center rounded-full p-2 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-300"
+                title={t("voiceInput")}
+              >
+                <Mic className="h-5 w-5" />
+              </button>
+            ) : null}
             <button
               onClick={handleSend}
               disabled={sending || busy || !hasContent}
