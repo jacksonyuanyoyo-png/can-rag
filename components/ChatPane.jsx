@@ -3,6 +3,8 @@
 import { useState, forwardRef, useImperativeHandle, useRef, useCallback } from "react"
 import { ThumbsUp, ThumbsDown, Copy } from "lucide-react"
 import { ChevronDown, RefreshCw, Pencil, Check, X, Square, MoreHorizontal } from "./icons/FidelityIcons"
+import AnswerSources from "./AnswerSources"
+import ChatMarkdown from "./ChatMarkdown"
 import Composer from "./Composer"
 import LandingHero from "./LandingHero"
 import { useLocale } from "./LocaleProvider"
@@ -250,7 +252,15 @@ const ChatPane = forwardRef(function ChatPane(
                   <span>{t("landingTitle")}</span>
                   <ChevronDown className="h-4 w-4 opacity-70" aria-hidden />
                 </div>
-                <div className="mt-3 whitespace-pre-wrap text-[15px] leading-7 text-slate-800 dark:text-slate-200">{m.content}</div>
+                <div className="mt-3">
+                  <ChatMarkdown content={m.content} />
+                  {m.status !== "running" ? (
+                    <AnswerSources
+                      citations={m.citations}
+                      knowledgeBaseIds={selectedKnowledgeBaseIds}
+                    />
+                  ) : null}
+                </div>
                 {isFailed && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">
                     {m.error || t("messageGenerationFailed")}

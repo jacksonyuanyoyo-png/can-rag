@@ -29,7 +29,12 @@ export interface MessageStreamHandlers {
   }) => void
   onMessageDelta?: (data: { messageId: string; delta: string }) => void
   onUsageCompleted?: (data: { messageId: string; usage: MessageUsage }) => void
-  onMessageCompleted?: (data: { messageId: string; content?: string; status?: string }) => void
+  onMessageCompleted?: (data: {
+    messageId: string
+    content?: string
+    status?: string
+    citations?: MessageCitation[]
+  }) => void
   onMessageFailed?: (data: {
     messageId: string
     error?: { code?: string; message?: string }
@@ -37,37 +42,51 @@ export interface MessageStreamHandlers {
   onDone?: (data: { conversationId?: string; requestId?: string }) => void
 }
 
+function readId(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
 /** Backend may send full messages or only IDs on `message.created`. */
 export function resolveMessageCreatedPair(
   data: MessageCreatedEvent,
   fallbackUserContent = '',
 ): { userMessage: Message; assistantMessage: Message } | null {
-  if (data.userMessage && data.assistantMessage) {
-    return { userMessage: data.userMessage, assistantMessage: data.assistantMessage }
+  const raw = data as MessageCreatedEvent & Record<string, unknown>
+  const userMessage = data.userMessage ?? (raw.user_message as Message | undefined)
+  const assistantMessage = data.assistantMessage ?? (raw.assistant_message as Message | undefined)
+
+  if (userMessage && assistantMessage) {
+    return { userMessage, assistantMessage }
   }
 
-  const userId = data.userMessageId
-  const assistantId = data.assistantMessageId
+  const userId =
+    readId(data.userMessageId) ??
+    readId(raw.user_message_id) ??
+    readId(userMessage?.id)
+  const assistantId =
+    readId(data.assistantMessageId) ??
+    readId(raw.assistant_message_id) ??
+    readId(assistantMessage?.id)
   if (!userId || !assistantId) return null
 
   const now = new Date().toISOString()
-  const userContent = data.userMessage?.content ?? data.content ?? fallbackUserContent
+  const userContent = userMessage?.content ?? data.content ?? fallbackUserContent
 
   return {
     userMessage: {
       id: userId,
       role: 'user',
       content: userContent,
-      createdAt: data.userMessage?.createdAt ?? now,
-      editedAt: data.userMessage?.editedAt ?? null,
+      createdAt: userMessage?.createdAt ?? now,
+      editedAt: userMessage?.editedAt ?? null,
     },
     assistantMessage: {
       id: assistantId,
       role: 'assistant',
-      content: data.assistantMessage?.content ?? '',
-      createdAt: data.assistantMessage?.createdAt ?? now,
-      editedAt: data.assistantMessage?.editedAt ?? null,
-      status: data.assistantMessage?.status ?? 'running',
+      content: assistantMessage?.content ?? '',
+      createdAt: assistantMessage?.createdAt ?? now,
+      editedAt: assistantMessage?.editedAt ?? null,
+      status: assistantMessage?.status ?? 'running',
     },
   }
 }

@@ -76,12 +76,17 @@ export interface Conversation {
 }
 
 export interface MessageCitation {
+  index?: number
+  knowledgeBaseId?: string
   fileId?: string
   fileName?: string
   chunkId?: string
+  dataId?: string
   score?: number
   snippet?: string
+  content?: string
   page?: number
+  sourceType?: string
 }
 
 export interface MessageUsage {
@@ -141,6 +146,9 @@ export interface KnowledgeBaseFile {
   mimeType?: string
   sizeBytes?: number
   errorMessage?: string | null
+  /** GET .../raw — inline source file (not parsed .md) */
+  sourceFileUrl?: string
+  storageKey?: string | null
 }
 
 export interface FileChunkIndex {

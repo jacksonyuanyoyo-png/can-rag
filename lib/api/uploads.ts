@@ -6,7 +6,7 @@ import {
   type ImportJobOptions,
 } from './kb-utils'
 import { normalizeImportJob } from './import-job-utils'
-import { resolveStorageUploadUrl } from './upload-url'
+import { resolveStorageUploadUrl, usesUploadProxy } from './upload-url'
 import type { ImportJob, PresignUploadItem } from './types'
 
 const TERMINAL_IMPORT_STATUSES = new Set(['completed', 'failed', 'cancelled'])
@@ -93,6 +93,9 @@ export async function putFileToUploadUrl(
   const putHeaders: Record<string, string> = { ...headers }
   if (storageKey) {
     putHeaders['X-Storage-Key'] = storageKey
+  }
+  if (usesUploadProxy(resolvedUrl) && uploadUrl !== resolvedUrl) {
+    putHeaders['X-Original-Upload-Url'] = uploadUrl
   }
 
   const response = await fetch(resolvedUrl, {

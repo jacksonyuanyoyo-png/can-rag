@@ -23,12 +23,22 @@ import {
   templatesService,
 } from "@/lib/api/services"
 import { ApiError } from "@/lib/api/api-error"
+import { normalizeCitations } from "@/lib/api/citations"
 import { resolveMessageCreatedPair } from "@/lib/api/sse"
 import { useApiError } from "@/hooks/useApiError"
 import { useAuth } from "@/components/providers/AuthProvider"
 
 function enrichConversation(conversation) {
   return { ...conversation, messages: conversation.messages ?? [] }
+}
+
+function isOptimisticMessageId(id) {
+  const s = String(id)
+  return s.startsWith("opt-user-") || s.startsWith("opt-assistant-")
+}
+
+function withoutOptimisticMessages(messages) {
+  return (messages || []).filter((m) => !isOptimisticMessageId(m.id))
 }
 
 export default function AIAssistantUI() {
@@ -105,6 +115,8 @@ export default function AIAssistantUI() {
   const [thinkingConvId, setThinkingConvId] = useState(null)
   const streamingAssistantIdRef = useRef(null)
   const streamAbortRef = useRef(null)
+  const streamingConvRef = useRef(null)
+  const messagesLoadSeqRef = useRef({})
 
   const composerRef = useRef(null)
 
@@ -120,18 +132,40 @@ export default function AIAssistantUI() {
     }
   }, [isAuthenticated, authLoading])
 
+  const mergeMessagesWithPriorCitations = useCallback((loaded, priorMessages) => {
+    const priorById = new Map((priorMessages || []).map((m) => [m.id, m]))
+    return loaded.map((msg) => {
+      const fromApi = normalizeCitations(msg.citations)
+      const fromPrior = normalizeCitations(priorById.get(msg.id)?.citations)
+      const citations = fromApi.length > 0 ? fromApi : fromPrior.length > 0 ? fromPrior : undefined
+      return citations ? { ...msg, citations } : msg
+    })
+  }, [])
+
   const loadConversationMessages = useCallback(
-    async (convId) => {
+    async (convId, { force = false } = {}) => {
+      const seq = (messagesLoadSeqRef.current[convId] ?? 0) + 1
+      messagesLoadSeqRef.current[convId] = seq
       try {
         const result = await messagesService.list(convId, { pageSize: 100 })
         setConversations((prev) =>
-          prev.map((c) => (c.id === convId ? { ...c, messages: result.data } : c)),
+          prev.map((c) => {
+            if (c.id !== convId) return c
+            if (!force && streamingConvRef.current === convId) return c
+            if (messagesLoadSeqRef.current[convId] !== seq) return c
+            const messages = mergeMessagesWithPriorCitations(result.data, c.messages)
+            return {
+              ...c,
+              messages,
+              messageCount: messages.length,
+            }
+          }),
         )
       } catch (error) {
         showApiError(error)
       }
     },
-    [showApiError],
+    [showApiError, mergeMessagesWithPriorCitations],
   )
 
   useEffect(() => {
@@ -430,11 +464,10 @@ export default function AIAssistantUI() {
   async function sendMessageStream(convId, content) {
     const controller = new AbortController()
     streamAbortRef.current = controller
+    streamingConvRef.current = convId
 
-    await messagesService.stream(
-      convId,
-      buildMessageBody(content),
-      {
+    try {
+      await messagesService.stream(convId, buildMessageBody(content), {
         onMessageCreated: (data) => {
           const pair = resolveMessageCreatedPair(data, content)
           if (!pair) return
@@ -444,11 +477,8 @@ export default function AIAssistantUI() {
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== convId) return c
-              const withoutOptimistic = (c.messages || []).filter(
-                (m) => !String(m.id).startsWith("opt-user-"),
-              )
               const msgs = [
-                ...withoutOptimistic,
+                ...withoutOptimisticMessages(c.messages),
                 userMessage,
                 {
                   ...assistantMessage,
@@ -470,31 +500,54 @@ export default function AIAssistantUI() {
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== convId) return c
-              const msgs = (c.messages || []).map((m) =>
-                m.id === messageId ? { ...m, content: `${m.content || ""}${delta}` } : m,
-              )
+              const existing = c.messages || []
+              const hasTarget = existing.some((m) => m.id === messageId)
+              const msgs = hasTarget
+                ? existing.map((m) =>
+                    m.id === messageId ? { ...m, content: `${m.content || ""}${delta}` } : m,
+                  )
+                : [
+                    ...existing,
+                    {
+                      id: messageId,
+                      role: "assistant",
+                      content: delta,
+                      createdAt: new Date().toISOString(),
+                      status: "running",
+                    },
+                  ]
               return { ...c, messages: msgs }
             }),
           )
         },
         onRetrievalCompleted: ({ messageId, citations }) => {
-          setConversations((prev) =>
-            prev.map((c) => {
-              if (c.id !== convId) return c
-              const msgs = (c.messages || []).map((m) =>
-                m.id === messageId ? { ...m, citations: citations ?? m.citations } : m,
-              )
-              return { ...c, messages: msgs }
-            }),
-          )
-        },
-        onMessageCompleted: ({ messageId, content, status }) => {
+          const normalized = normalizeCitations(citations)
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== convId) return c
               const msgs = (c.messages || []).map((m) =>
                 m.id === messageId
-                  ? { ...m, content: content ?? m.content, status: status ?? "completed" }
+                  ? { ...m, citations: normalized.length > 0 ? normalized : m.citations }
+                  : m,
+              )
+              return { ...c, messages: msgs }
+            }),
+          )
+        },
+        onMessageCompleted: ({ messageId, content, status, citations }) => {
+          const normalized = normalizeCitations(citations)
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== convId) return c
+              const msgs = (c.messages || []).map((m) =>
+                m.id === messageId
+                  ? {
+                      ...m,
+                      content: content ?? m.content,
+                      status: status ?? "completed",
+                      citations:
+                        normalized.length > 0 ? normalized : m.citations,
+                    }
                   : m,
               )
               const last = msgs[msgs.length - 1]
@@ -525,9 +578,12 @@ export default function AIAssistantUI() {
           )
         },
         onDone: () => {},
-      },
-      controller.signal,
-    )
+      }, controller.signal)
+    } finally {
+      if (streamingConvRef.current === convId) {
+        streamingConvRef.current = null
+      }
+    }
   }
 
   async function sendMessageNonStream(convId, content) {
@@ -535,10 +591,11 @@ export default function AIAssistantUI() {
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c
-        const withoutOptimistic = (c.messages || []).filter(
-          (m) => !String(m.id).startsWith("opt-user-"),
-        )
-        const msgs = [...withoutOptimistic, result.userMessage, result.assistantMessage]
+        const msgs = [
+          ...withoutOptimisticMessages(c.messages),
+          result.userMessage,
+          result.assistantMessage,
+        ]
         return {
           ...c,
           messages: msgs,
@@ -556,17 +613,29 @@ export default function AIAssistantUI() {
     if (!trimmed || !selectedModel) return
 
     const optimisticUserId = `opt-user-${Date.now()}`
+    const optimisticAssistantId = `opt-assistant-${Date.now()}`
     const now = new Date().toISOString()
 
+    streamingAssistantIdRef.current = optimisticAssistantId
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c
-        const existing = c.messages || []
-        if (existing.length > 0) return c
+        const msgs = [
+          ...withoutOptimisticMessages(c.messages),
+          { id: optimisticUserId, role: "user", content: trimmed, createdAt: now },
+          {
+            id: optimisticAssistantId,
+            role: "assistant",
+            content: "",
+            createdAt: now,
+            status: "running",
+          },
+        ]
         return {
           ...c,
-          messages: [{ id: optimisticUserId, role: "user", content: trimmed, createdAt: now }],
+          messages: msgs,
           preview: trimmed.slice(0, 80),
+          messageCount: msgs.length,
         }
       }),
     )
@@ -578,11 +647,18 @@ export default function AIAssistantUI() {
       if (messagesService.isStreamEnabled()) {
         await sendMessageStream(convId, trimmed)
         clearGeneratingState()
+        await loadConversationMessages(convId, { force: true })
       } else {
         await sendMessageNonStream(convId, trimmed)
       }
     } catch (error) {
       clearGeneratingState()
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c
+          return { ...c, messages: withoutOptimisticMessages(c.messages) }
+        }),
+      )
       if (error?.name === "AbortError") return
       showApiError(error)
       throw error
@@ -758,7 +834,9 @@ export default function AIAssistantUI() {
               onModelChange={setSelectedModel}
               selectedKnowledgeBaseIds={selectedKnowledgeBaseIds}
               onKnowledgeBaseIdsChange={setSelectedKnowledgeBaseIds}
-              onSend={(content) => (selected ? sendMessage(selected.id, content) : Promise.resolve())}
+              onSend={(content) =>
+                selectedId ? sendMessage(selectedId, content) : Promise.resolve()
+              }
               onEditMessage={(messageId, newContent) =>
                 selected && editMessage(selected.id, messageId, newContent)
               }

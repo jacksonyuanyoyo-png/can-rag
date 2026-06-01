@@ -1,9 +1,5 @@
 import type { NextRequest } from 'next/server'
-
-const apiProxyTarget = (process.env.API_PROXY_TARGET || 'http://localhost:8000').replace(
-  /\/+$/,
-  '',
-)
+import { getApiProxyTarget } from '@/lib/api/proxy-target'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,7 +10,7 @@ export async function POST(
   context: { params: Promise<{ conversationId: string }> },
 ) {
   const { conversationId } = await context.params
-  const backendUrl = `${apiProxyTarget}/v1/conversations/${encodeURIComponent(conversationId)}/messages:stream`
+  const backendUrl = `${getApiProxyTarget()}/v1/conversations/${encodeURIComponent(conversationId)}/messages:stream`
 
   const headers = new Headers()
   headers.set('Content-Type', request.headers.get('content-type') || 'application/json')

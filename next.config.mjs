@@ -1,8 +1,7 @@
+import { getApiProxyTarget } from './env.mjs'
+
 /** @type {import('next').NextConfig} */
-const apiProxyTarget = (process.env.API_PROXY_TARGET || 'http://localhost:8000').replace(
-  /\/+$/,
-  '',
-)
+const apiProxyTarget = getApiProxyTarget()
 
 const nextConfig = {
   typescript: {
@@ -10,6 +9,13 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+  },
+  webpack: (config, { dev, isServer }) => {
+    // pdfjs-dist breaks under webpack eval-* devtool (Object.defineProperty on non-object)
+    if (dev && !isServer) {
+      config.devtool = "cheap-module-source-map"
+    }
+    return config
   },
   async rewrites() {
     return [

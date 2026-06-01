@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:8000'
+import { getApiProxyTarget } from './proxy-target'
 
 function readEnv(name: string): string | undefined {
   return process.env[name]
@@ -6,7 +6,8 @@ function readEnv(name: string): string | undefined {
 
 /**
  * Browser (dev): empty base → same-origin `/v1/*`, proxied by Next.js to avoid CORS.
- * Node/scripts: `API_PROXY_TARGET` or default backend URL.
+ * Set `NEXT_PUBLIC_API_BASE_URL` when the UI must call the backend directly (no Next proxy).
+ * Node/scripts: uses `getApiProxyTarget()`.
  */
 export function getApiBaseUrl(): string {
   const explicit = readEnv('NEXT_PUBLIC_API_BASE_URL')
@@ -18,8 +19,7 @@ export function getApiBaseUrl(): string {
     return ''
   }
 
-  const serverTarget = readEnv('API_PROXY_TARGET') ?? DEFAULT_API_BASE_URL
-  return serverTarget.replace(/\/+$/, '')
+  return getApiProxyTarget()
 }
 
 export function isSseEnabled(): boolean {

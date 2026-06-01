@@ -15,9 +15,12 @@ import {
   RefreshCw,
   Search,
   Target,
+  Trash2,
 } from "lucide-react"
 import { useLocale } from "./LocaleProvider"
 import {
+  batchDeleteKnowledgeBaseFiles,
+  deleteKnowledgeBaseFile,
   getKnowledgeBase,
   getKnowledgeBaseIndexStats,
   listKnowledgeBaseFiles,
@@ -77,6 +80,10 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
+  const [batchMode, setBatchMode] = useState(false)
+  const [selectedFileIds, setSelectedFileIds] = useState(() => new Set())
+  const [deletingFileId, setDeletingFileId] = useState(null)
+  const [batchDeleting, setBatchDeleting] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300)
@@ -158,6 +165,109 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
     await Promise.all([fetchKnowledgeBase(), fetchIndexStats(), fetchFiles()])
     setRefreshing(false)
   }
+
+  const exitBatchMode = () => {
+    setBatchMode(false)
+    setSelectedFileIds(new Set())
+  }
+
+  const toggleBatchMode = () => {
+    if (batchMode) {
+      exitBatchMode()
+    } else {
+      setBatchMode(true)
+      setSelectedFileIds(new Set())
+    }
+  }
+
+  const toggleFileSelected = (fileId) => {
+    setSelectedFileIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileId)) next.delete(fileId)
+      else next.add(fileId)
+      return next
+    })
+  }
+
+  const allPageSelected =
+    files.length > 0 && files.every((file) => selectedFileIds.has(file.id))
+
+  const toggleSelectAllPage = () => {
+    if (allPageSelected) {
+      setSelectedFileIds((prev) => {
+        const next = new Set(prev)
+        for (const file of files) next.delete(file.id)
+        return next
+      })
+    } else {
+      setSelectedFileIds((prev) => {
+        const next = new Set(prev)
+        for (const file of files) next.add(file.id)
+        return next
+      })
+    }
+  }
+
+  const refreshAfterDelete = async () => {
+    await Promise.all([fetchIndexStats(), fetchFiles(), fetchKnowledgeBase()])
+  }
+
+  const handleDeleteFile = async (file) => {
+    if (!kbId || !file?.id) return
+    if (!confirm(t("kbFileDeleteConfirm", { name: file.name }))) return
+
+    setDeletingFileId(file.id)
+    setError("")
+    try {
+      await deleteKnowledgeBaseFile(kbId, file.id)
+      setSelectedFileIds((prev) => {
+        const next = new Set(prev)
+        next.delete(file.id)
+        return next
+      })
+      if (files.length === 1 && page > 1) {
+        setPage((p) => Math.max(1, p - 1))
+      } else {
+        await refreshAfterDelete()
+      }
+    } catch (err) {
+      setError(t("kbDeleteError", { message: formatApiErrorMessage(err) }))
+    } finally {
+      setDeletingFileId(null)
+    }
+  }
+
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedFileIds)
+    if (!kbId || ids.length === 0) return
+    if (!confirm(t("kbFileBatchDeleteConfirm", { count: ids.length }))) return
+
+    setBatchDeleting(true)
+    setError("")
+    try {
+      const result = await batchDeleteKnowledgeBaseFiles(kbId, ids)
+      if (result.failed?.length) {
+        const details = result.failed
+          .map((item) => `${item.fileId}: ${item.message || item.code}`)
+          .join("; ")
+        setError(
+          t("kbFileBatchDeletePartial", {
+            succeeded: result.succeeded?.length ?? 0,
+            failed: result.failed.length,
+            details,
+          }),
+        )
+      }
+      exitBatchMode()
+      await refreshAfterDelete()
+    } catch (err) {
+      setError(t("kbDeleteError", { message: formatApiErrorMessage(err) }))
+    } finally {
+      setBatchDeleting(false)
+    }
+  }
+
+  const tableColSpan = batchMode ? 6 : 5
 
   const resourceLabel =
     knowledgeBase?.resourceType === "team" ? t("kbResourceTeam") : t("kbResourcePersonal")
@@ -332,11 +442,44 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             >
               <RefreshCw className={cls("h-4 w-4", refreshing && "animate-spin")} strokeWidth={1.5} />
             </button>
-            {UI_VISIBILITY.kbDetailBatch ? (
-              <button type="button" className={cls("px-4 py-2", surfaceBtn)}>
-                {t("kbDetailBatch")}
-              </button>
-            ) : null}
+            {UI_VISIBILITY.kbDetailBatch
+              ? batchMode
+                ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={selectedFileIds.size === 0 || batchDeleting}
+                        onClick={handleBatchDelete}
+                        className={cls(
+                          "inline-flex items-center gap-1.5 px-4 py-2 text-red-600",
+                          surfaceBtn,
+                          (selectedFileIds.size === 0 || batchDeleting) && "opacity-50",
+                        )}
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                        {t("kbDetailBatchDelete")}
+                        {selectedFileIds.size > 0 ? ` (${selectedFileIds.size})` : ""}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={batchDeleting}
+                        onClick={exitBatchMode}
+                        className={cls("px-4 py-2", surfaceBtn, batchDeleting && "opacity-50")}
+                      >
+                        {t("kbDetailBatchCancel")}
+                      </button>
+                    </>
+                  )
+                : (
+                    <button
+                      type="button"
+                      onClick={toggleBatchMode}
+                      className={cls("px-4 py-2", surfaceBtn)}
+                    >
+                      {t("kbDetailBatch")}
+                    </button>
+                  )
+              : null}
             <button
               type="button"
               onClick={() => router.push(`/library/${kbId}/import`)}
@@ -353,6 +496,17 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
             <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
                 <tr className={libraryTableHead}>
+                  {batchMode ? (
+                    <th className="w-10 whitespace-nowrap px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={allPageSelected}
+                        onChange={toggleSelectAllPage}
+                        aria-label={t("kbSelectAll")}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                    </th>
+                  ) : null}
                   <th className="whitespace-nowrap px-4 py-3">{t("kbFileColNameId")}</th>
                   <th className="whitespace-nowrap px-4 py-3">
                     <span className="inline-flex items-center gap-1">
@@ -368,18 +522,21 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                     </span>
                   </th>
                   <th className="whitespace-nowrap px-4 py-3">{t("kbFileColUploaded")}</th>
+                  {!batchMode ? (
+                    <th className="whitespace-nowrap px-4 py-3 text-right">{t("kbFileColActions")}</th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {filesLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-16 text-center text-sm text-slate-500">
+                    <td colSpan={tableColSpan} className="px-4 py-16 text-center text-sm text-slate-500">
                       {t("kbLoading")}
                     </td>
                   </tr>
                 ) : files.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-16 text-center text-sm text-slate-500">
+                    <td colSpan={tableColSpan} className="px-4 py-16 text-center text-sm text-slate-500">
                       {t("kbFileNoResults")}
                     </td>
                   </tr>
@@ -389,6 +546,17 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                       key={file.id}
                       className={libraryTableRow}
                     >
+                      {batchMode ? (
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedFileIds.has(file.id)}
+                            onChange={() => toggleFileSelected(file.id)}
+                            aria-label={file.name}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                        </td>
+                      ) : null}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <FileIcon />
@@ -420,6 +588,22 @@ export default function KnowledgeBaseDetailPage({ embedded = false }) {
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {file.uploadedAt ? formatDateTime(file.uploadedAt, locale) : "—"}
                       </td>
+                      {!batchMode ? (
+                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            disabled={deletingFileId === file.id || batchDeleting}
+                            onClick={() => handleDeleteFile(file)}
+                            className={cls(
+                              "theme-focus-ring inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-red-600 transition hover:bg-red-50",
+                              deletingFileId === file.id && "opacity-50",
+                            )}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            {t("kbFileDelete")}
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   ))
                 )}

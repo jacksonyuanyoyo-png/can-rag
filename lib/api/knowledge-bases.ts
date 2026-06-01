@@ -56,6 +56,35 @@ export async function listKnowledgeBaseFiles(kbId: string, query: ListQuery = {}
   )
 }
 
+export interface DeleteKnowledgeBaseFileResult {
+  success: boolean
+  fileId?: string
+  deletedAt?: string
+}
+
+export interface BatchDeleteKnowledgeBaseFilesResult {
+  succeeded: string[]
+  failed: Array<{ fileId: string; code: string; message: string }>
+  summary?: { total: number; succeededCount: number; failedCount: number }
+}
+
+/** DELETE /v1/knowledge-bases/{kbId}/files/{fileId} — 删除文件及切片、向量、落盘资源 */
+export async function deleteKnowledgeBaseFile(kbId: string, fileId: string) {
+  return apiRequest<DeleteKnowledgeBaseFileResult>(
+    `${API_PREFIX}/knowledge-bases/${kbId}/files/${fileId}`,
+    { method: 'DELETE' },
+  )
+}
+
+/** POST /v1/knowledge-bases/{kbId}/files:batch-delete — 部分失败仍 HTTP 200 */
+export async function batchDeleteKnowledgeBaseFiles(kbId: string, fileIds: string[]) {
+  const result = await apiRequest<BatchDeleteKnowledgeBaseFilesResult>(
+    `${API_PREFIX}/knowledge-bases/${kbId}/files:batch-delete`,
+    { method: 'POST', body: { fileIds } },
+  )
+  return result.data
+}
+
 export async function getKnowledgeBaseIndexStats(kbId: string) {
   return apiRequest<IndexStats>(`${API_PREFIX}/knowledge-bases/${kbId}/index-stats`)
 }

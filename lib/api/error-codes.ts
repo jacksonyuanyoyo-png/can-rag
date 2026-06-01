@@ -82,6 +82,8 @@ const ERROR_MESSAGES_ZH: Partial<Record<ErrorCode, string>> = {
   FILE_NOT_FOUND: '文件不存在',
   FILE_TYPE_UNSUPPORTED: '不支持的文件类型',
   FILE_SIZE_EXCEEDED: '文件大小超出限制',
+  FILE_DUPLICATED: '文件已存在',
+  FILE_IN_USE: '文件正在导入或索引中，请稍后再删',
   IMPORT_JOB_NOT_FOUND: '导入任务不存在',
   VALIDATION_ERROR: '请求参数校验失败',
   RESOURCE_NOT_FOUND: '资源不存在',

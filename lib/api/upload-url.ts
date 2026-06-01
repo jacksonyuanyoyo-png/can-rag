@@ -1,48 +1,68 @@
+import { getApiProxyTarget } from './proxy-target'
+
 const DEV_UPLOAD_PATH = '/api/dev-upload/'
 
-/** Dev presign URLs point at the backend host; rewrite to same-origin dev upload route. */
-export function resolveStorageUploadUrl(uploadUrl: string): string {
-  if (typeof window === 'undefined') {
-    return rewriteLocalBackendUploadUrl(uploadUrl)
-  }
+/** Presign PUT paths that should go through the Next.js upload proxy */
+const BACKEND_UPLOAD_PATH_RE = /^\/v1\/(?:_dev\/)?uploads\/[^/]+/
 
-  try {
-    const parsed = new URL(uploadUrl, window.location.origin)
-    if (isLocalDevUploadPath(parsed.pathname) && isLocalBackendHost(parsed.hostname, parsed.port)) {
-      const uploadId = parsed.pathname.split('/').pop()
-      if (uploadId) {
-        return `${DEV_UPLOAD_PATH}${uploadId}${parsed.search}`
-      }
-    }
-  } catch {
-    // Relative or opaque URL — use as-is.
-  }
-
-  return uploadUrl
+export function isProxiedBackendUploadPath(pathname: string): boolean {
+  return BACKEND_UPLOAD_PATH_RE.test(pathname)
 }
 
-export function isLocalDevUploadPath(pathname: string): boolean {
-  return pathname.startsWith('/v1/_dev/uploads/')
+/** @deprecated Use isProxiedBackendUploadPath */
+export function isDevBackendUploadPath(pathname: string): boolean {
+  return isProxiedBackendUploadPath(pathname)
 }
 
-function isLocalBackendHost(hostname: string, port: string): boolean {
-  return (
-    (hostname === '127.0.0.1' || hostname === 'localhost') &&
-    (port === '8000' || port === '')
-  )
+export function extractUploadIdFromUploadPath(pathname: string): string | null {
+  const match = pathname.match(/\/uploads\/([^/?#]+)/)
+  return match?.[1] ?? null
 }
 
-function rewriteLocalBackendUploadUrl(uploadUrl: string): string {
+/**
+ * Normalize presign uploadUrl to the configured backend origin (API_PROXY_TARGET).
+ */
+export function normalizePresignUploadTarget(uploadUrl: string): string | null {
   try {
     const parsed = new URL(uploadUrl)
-    if (isLocalDevUploadPath(parsed.pathname) && isLocalBackendHost(parsed.hostname, parsed.port)) {
-      const uploadId = parsed.pathname.split('/').pop()
-      if (uploadId) {
-        return `${DEV_UPLOAD_PATH}${uploadId}${parsed.search}`
-      }
+    if (!isProxiedBackendUploadPath(parsed.pathname)) {
+      return null
     }
+    const proxy = new URL(getApiProxyTarget())
+    parsed.protocol = proxy.protocol
+    parsed.host = proxy.host
+    return parsed.toString()
   } catch {
-    // ignore
+    return null
   }
-  return uploadUrl
+}
+
+/**
+ * Presign URLs pointing at the backend are rewritten to same-origin `/api/dev-upload`
+ * so the browser PUT is proxied (avoids CORS). Pass the original URL via
+ * `X-Original-Upload-Url` on PUT.
+ */
+export function resolveStorageUploadUrl(uploadUrl: string): string {
+  try {
+    const base =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    const parsed = new URL(uploadUrl, base)
+    if (!isProxiedBackendUploadPath(parsed.pathname)) {
+      return uploadUrl
+    }
+    const uploadId = extractUploadIdFromUploadPath(parsed.pathname)
+    if (!uploadId) return uploadUrl
+    return `${DEV_UPLOAD_PATH}${encodeURIComponent(uploadId)}${parsed.search}`
+  } catch {
+    return uploadUrl
+  }
+}
+
+export function usesUploadProxy(resolvedUrl: string): boolean {
+  return resolvedUrl.includes(DEV_UPLOAD_PATH)
+}
+
+/** @deprecated Use isProxiedBackendUploadPath */
+export function isLocalDevUploadPath(pathname: string): boolean {
+  return isProxiedBackendUploadPath(pathname)
 }
