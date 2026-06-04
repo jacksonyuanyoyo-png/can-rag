@@ -12,13 +12,13 @@ function ParseBasicOption({ id, label, description, checked, onChange, disabled,
     <label
       htmlFor={id}
       className={cls(
-        "flex min-w-[8rem] flex-1 gap-2.5",
+        "flex items-start gap-2.5",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
       )}
     >
       <Checkbox
         id={id}
-        className={SURFACE_CHECKBOX}
+        className={cls(SURFACE_CHECKBOX, "mt-0.5 shrink-0")}
         checked={checked}
         disabled={disabled}
         onCheckedChange={(v) => onChange(v === true)}
@@ -35,7 +35,7 @@ function ParseBasicOption({ id, label, description, checked, onChange, disabled,
 
 function ParseWebOption({ label, description }) {
   return (
-    <label className="flex min-w-[8rem] flex-1 gap-2.5 cursor-default">
+    <label className="flex items-start gap-2.5 cursor-default">
       <input
         type="radio"
         className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--fi-primary)]"
@@ -62,7 +62,7 @@ export default function BasicParseSettings({
 }) {
   if (sourceType === "url") {
     return (
-      <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
+      <div className="flex min-w-0 flex-col gap-3">
         <ParseWebOption
           label={t("kbImportBasicWebText")}
           description={t("kbImportBasicWebTextDesc")}
@@ -72,7 +72,7 @@ export default function BasicParseSettings({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
+    <div className="flex min-w-0 flex-col gap-3">
       <ParseBasicOption
         id="parse-text"
         label={t("kbImportBasicText")}

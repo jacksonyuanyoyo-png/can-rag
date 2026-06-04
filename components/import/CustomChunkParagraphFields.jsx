@@ -12,6 +12,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { surfaceInput } from "../libraryUi"
 import { cls } from "../utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 const INDEX_SIZE_OPTIONS = [256, 512, 1024]
 
@@ -116,25 +117,27 @@ export default function CustomChunkParagraphFields({ mode, values, onChange, dis
         />
       </div>
 
-      <div>
-        <FieldLabel helpText={t("kbImportIndexSizeHelp")}>{t("kbImportIndexSize")}</FieldLabel>
-        <Select
-          value={String(indexSize)}
-          onValueChange={(v) => patch({ indexSize: Number(v) })}
-          disabled={disabled}
-        >
-          <SelectTrigger className={cls("w-full", surfaceInput)}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {INDEX_SIZE_OPTIONS.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {UI_VISIBILITY.kbImportIndexSize ? (
+        <div>
+          <FieldLabel helpText={t("kbImportIndexSizeHelp")}>{t("kbImportIndexSize")}</FieldLabel>
+          <Select
+            value={String(indexSize)}
+            onValueChange={(v) => patch({ indexSize: Number(v) })}
+            disabled={disabled}
+          >
+            <SelectTrigger className={cls("w-full", surfaceInput)}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INDEX_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
     </div>
   )
 }

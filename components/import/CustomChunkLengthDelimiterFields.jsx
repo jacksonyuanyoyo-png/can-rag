@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 const CHUNK_SIZE_MIN = 100
 const CHUNK_SIZE_MAX = 4000
@@ -226,14 +227,16 @@ export default function CustomChunkLengthDelimiterFields({
           disabled={disabled}
           onChange={(chunkOverlap) => patch({ chunkOverlap })}
         />
-        <IndexSizeSelect
-          id="kb-import-index-size-length"
-          label={t("kbImportIndexSize")}
-          help={t("kbImportIndexSizeHelp")}
-          value={values.indexSize}
-          disabled={disabled}
-          onChange={(indexSize) => patch({ indexSize })}
-        />
+        {UI_VISIBILITY.kbImportIndexSize ? (
+          <IndexSizeSelect
+            id="kb-import-index-size-length"
+            label={t("kbImportIndexSize")}
+            help={t("kbImportIndexSizeHelp")}
+            value={values.indexSize}
+            disabled={disabled}
+            onChange={(indexSize) => patch({ indexSize })}
+          />
+        ) : null}
       </div>
     )
   }
@@ -248,14 +251,16 @@ export default function CustomChunkLengthDelimiterFields({
         onChange={(delimiter) => patch({ delimiter })}
         t={t}
       />
-      <IndexSizeSelect
-        id="kb-import-index-size-delimiter"
-        label={t("kbImportIndexSize")}
-        help={t("kbImportIndexSizeHelp")}
-        value={values.indexSize}
-        disabled={disabled}
-        onChange={(indexSize) => patch({ indexSize })}
-      />
+      {UI_VISIBILITY.kbImportIndexSize ? (
+        <IndexSizeSelect
+          id="kb-import-index-size-delimiter"
+          label={t("kbImportIndexSize")}
+          help={t("kbImportIndexSizeHelp")}
+          value={values.indexSize}
+          disabled={disabled}
+          onChange={(indexSize) => patch({ indexSize })}
+        />
+      ) : null}
     </div>
   )
 }

@@ -49,12 +49,16 @@ import {
   buildImportPayload,
 } from "./import/customChunkConfig"
 import { cls } from "./utils"
+import { UI_VISIBILITY } from "@/lib/ui-visibility"
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024
 const MAX_FILE_COUNT = 100
 
 const FORM_GRID =
-  "grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,max-content)_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-6"
+  "grid grid-cols-1 items-start gap-x-6 gap-y-5 sm:grid-cols-[10.5rem_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-6"
+
+/** 无左侧 FormLabel 时占位，使右侧内容与「选择文件类型」等字段右列对齐 */
+const FORM_LABEL_SPACER = "hidden sm:block"
 
 /** 与工程主色一致，覆盖 ui/checkbox 默认 primary 蓝色 */
 const SURFACE_CHECKBOX =
@@ -97,8 +101,8 @@ function FormLabel({ children, required, htmlFor }) {
   return (
     <div
       className={cls(
-        "text-sm font-medium leading-snug text-slate-800 sm:pt-0.5",
-        htmlFor && "sm:min-h-[2.625rem] sm:flex sm:items-center",
+        "self-start text-sm font-medium leading-snug text-slate-800 sm:pt-0.5",
+        htmlFor && "sm:flex sm:min-h-[2.625rem] sm:items-center",
       )}
     >
       {htmlFor ? (
@@ -159,7 +163,7 @@ function ChunkRadio({ id, name, label, description, checked, onChange, disabled 
     <label
       htmlFor={id}
       className={cls(
-        "flex min-w-[8.5rem] flex-1 gap-2.5 rounded-2xl border p-3 transition-colors",
+        "flex h-full min-w-0 flex-1 items-start gap-2.5 rounded-2xl border p-3 transition-colors",
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         checked ? libraryChunkRadioChecked : libraryChunkRadio,
       )}
@@ -175,7 +179,7 @@ function ChunkRadio({ id, name, label, description, checked, onChange, disabled 
       />
       <span className="min-w-0">
         <span className="block text-sm font-medium text-slate-800">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
+        <span className="mt-0.5 block min-h-[2.5rem] text-xs leading-relaxed text-slate-500">{description}</span>
       </span>
     </label>
   )
@@ -569,7 +573,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportUploadSection")}</SectionTitle>
 
-              <div className="hidden sm:block" aria-hidden />
+              <div className={FORM_LABEL_SPACER} aria-hidden />
 
               <input
                 ref={fileInputRef}
@@ -658,7 +662,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportParseTitle")}</SectionTitle>
 
-              <FormLabel>{t("kbImportBasicTitle")}</FormLabel>
+              <div className={FORM_LABEL_SPACER} aria-hidden />
               <BasicParseSettings
                 sourceType={sourceType}
                 layout={parseLayout}
@@ -672,10 +676,10 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
             <section className={FORM_GRID}>
               <SectionTitle>{t("kbImportChunkTitle")}</SectionTitle>
 
-              <FormLabel required>{t("kbImportChunkStrategy")}</FormLabel>
-              <div className="space-y-4">
+              <div className={FORM_LABEL_SPACER} aria-hidden />
+              <div className="min-w-0 space-y-4">
                 <div
-                  className="flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap"
+                  className="flex w-full flex-row items-stretch gap-3"
                   role="radiogroup"
                   aria-label={t("kbImportChunkStrategy")}
                 >
@@ -697,24 +701,28 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     disabled={submitting}
                     onChange={() => setChunkStrategy("custom")}
                   />
-                  <ChunkRadio
-                    id="chunk-whole"
-                    name="chunk-strategy"
-                    label={t("kbImportChunkWhole")}
-                    description={t("kbImportWholeDisabled")}
-                    checked={chunkStrategy === "whole"}
-                    disabled
-                    onChange={() => setChunkStrategy("whole")}
-                  />
-                  <ChunkRadio
-                    id="chunk-page"
-                    name="chunk-strategy"
-                    label={t("kbImportChunkPage")}
-                    description={t("kbImportChunkPageDesc")}
-                    checked={chunkStrategy === "page"}
-                    disabled={submitting}
-                    onChange={() => setChunkStrategy("page")}
-                  />
+                  {UI_VISIBILITY.kbImportChunkWhole ? (
+                    <ChunkRadio
+                      id="chunk-whole"
+                      name="chunk-strategy"
+                      label={t("kbImportChunkWhole")}
+                      description={t("kbImportWholeDisabled")}
+                      checked={chunkStrategy === "whole"}
+                      disabled
+                      onChange={() => setChunkStrategy("whole")}
+                    />
+                  ) : null}
+                  {UI_VISIBILITY.kbImportChunkPage ? (
+                    <ChunkRadio
+                      id="chunk-page"
+                      name="chunk-strategy"
+                      label={t("kbImportChunkPage")}
+                      description={t("kbImportChunkPageDesc")}
+                      checked={chunkStrategy === "page"}
+                      disabled={submitting}
+                      onChange={() => setChunkStrategy("page")}
+                    />
+                  ) : null}
                 </div>
 
                 {chunkStrategy === "custom" ? (
@@ -728,34 +736,36 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                   />
                 ) : null}
 
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
-                  <FormLabel>{t("kbImportChunkMeta")}</FormLabel>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
-                      <Checkbox
-                        className={SURFACE_CHECKBOX}
-                        checked={metaFilename}
-                        disabled={submitting}
-                        onCheckedChange={(v) => setMetaFilename(v === true)}
-                      />
-                      {t("kbImportChunkMetaFilename")}
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
-                      <Checkbox
-                        className={SURFACE_CHECKBOX}
-                        checked={metaHeadings}
-                        disabled={submitting}
-                        onCheckedChange={(v) => setMetaHeadings(v === true)}
-                      />
-                      {t("kbImportChunkMetaHeadings")}
-                    </label>
+                {UI_VISIBILITY.kbImportLinkedMetadata ? (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+                    <FormLabel>{t("kbImportChunkMeta")}</FormLabel>
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                        <Checkbox
+                          className={SURFACE_CHECKBOX}
+                          checked={metaFilename}
+                          disabled={submitting}
+                          onCheckedChange={(v) => setMetaFilename(v === true)}
+                        />
+                        {t("kbImportChunkMetaFilename")}
+                      </label>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                        <Checkbox
+                          className={SURFACE_CHECKBOX}
+                          checked={metaHeadings}
+                          disabled={submitting}
+                          onCheckedChange={(v) => setMetaHeadings(v === true)}
+                        />
+                        {t("kbImportChunkMetaHeadings")}
+                      </label>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </div>
             </section>
 
             <div className={FORM_GRID}>
-              <div className="col-span-full flex flex-wrap items-center gap-2 sm:col-start-2 sm:gap-3">
+              <div className="col-span-full flex w-full flex-wrap items-center justify-end gap-2 sm:col-start-2 sm:gap-3">
                 <button
                   type="button"
                   disabled={submitting || sourceType === "url"}
