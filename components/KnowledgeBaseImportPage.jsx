@@ -13,6 +13,7 @@ import {
   retryImportJob,
   uploadAndImportFiles,
 } from "@/lib/api/uploads"
+import { isValidWebImportUrl, webImportUrl } from "@/lib/api/web-imports"
 import {
   getImportStageLabel,
   isImportProgressFromStage,
@@ -230,6 +231,12 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   }, [hasPdfFiles])
 
   useEffect(() => {
+    if (sourceType === "url" && chunkStrategy !== "default") {
+      setChunkStrategy("default")
+    }
+  }, [sourceType, chunkStrategy])
+
+  useEffect(() => {
     if (!kbId) return
     let cancelled = false
     ;(async () => {
@@ -263,6 +270,18 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
       abortRef.current?.abort()
     }
   }, [])
+
+  const validateWebUrl = (raw) => {
+    if (!raw.trim()) {
+      setError(t("kbImportWebUrlRequired"))
+      return false
+    }
+    if (!isValidWebImportUrl(raw)) {
+      setError(t("kbImportWebUrlInvalid"))
+      return false
+    }
+    return true
+  }
 
   const validateFiles = (files) => {
     if (files.length === 0) {
@@ -330,13 +349,26 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
 
   const importOptions = () =>
     buildImportPayload({
-      chunkStrategy,
+      chunkStrategy: sourceType === "url" ? "default" : chunkStrategy,
       customChunkMode,
       customChunkConfig,
       metaFilename,
       metaHeadings,
       pdfEnhancement: parseLayout,
     })
+
+  const finishImportJob = (finalJob) => {
+    if (finalJob.status === "completed") {
+      router.push(`/library/${kbId}`)
+      return
+    }
+    const failMessage =
+      finalJob.errorMessage ||
+      finalJob.errorCode ||
+      t("kbImportFailed", { message: finalJob.status })
+    setFailedJobId(finalJob.id)
+    setError(t("kbImportFailed", { message: failMessage }))
+  }
 
   const runImport = async (files, existingJobId = null) => {
     setSubmitting(true)
@@ -364,18 +396,41 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
           signal: controller.signal,
         })
       }
+      finishImportJob(finalJob)
+    } catch (err) {
+      setError(t("kbImportFailed", { message: formatApiErrorMessage(err) }))
+    } finally {
+      setSubmitting(false)
+      abortRef.current = null
+    }
+  }
 
-      if (finalJob.status === "completed") {
-        router.push(`/library/${kbId}`)
-        return
+  const runWebImport = async (url, existingJobId = null) => {
+    setSubmitting(true)
+    setError("")
+    setImportJob(null)
+    setFailedJobId(null)
+    setUploadProgress({ completed: 0, total: 0 })
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      let finalJob
+      if (existingJobId) {
+        const { data: retriedJob } = await retryImportJob(existingJobId, importOptions())
+        setImportJob(retriedJob)
+        finalJob = await pollImportJob(retriedJob.id, {
+          onUpdate: setImportJob,
+          signal: controller.signal,
+        })
+      } else {
+        finalJob = await webImportUrl(kbId, url, importOptions(), {
+          onImportUpdate: setImportJob,
+          signal: controller.signal,
+        })
       }
-
-      const failMessage =
-        finalJob.errorMessage ||
-        finalJob.errorCode ||
-        t("kbImportFailed", { message: finalJob.status })
-      setFailedJobId(finalJob.id)
-      setError(t("kbImportFailed", { message: failMessage }))
+      finishImportJob(finalJob)
     } catch (err) {
       setError(t("kbImportFailed", { message: formatApiErrorMessage(err) }))
     } finally {
@@ -385,12 +440,22 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
   }
 
   const handleConfirm = async () => {
+    if (sourceType === "url") {
+      if (!validateWebUrl(webUrl)) return
+      await runWebImport(webUrl.trim())
+      return
+    }
     if (!validateFiles(pickedFiles)) return
     await runImport(pickedFiles)
   }
 
   const handleRetry = async () => {
     if (!failedJobId) return
+    if (sourceType === "url") {
+      if (!validateWebUrl(webUrl)) return
+      await runWebImport(webUrl.trim(), failedJobId)
+      return
+    }
     await runImport(pickedFiles, failedJobId)
   }
 
@@ -448,6 +513,9 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
     uploadProgress.total > 0
       ? Math.round((uploadProgress.completed / uploadProgress.total) * 100)
       : 0
+
+  const canSubmit =
+    sourceType === "url" ? isValidWebImportUrl(webUrl) : pickedFiles.length > 0
 
   return (
     <div className={embedded ? libraryPageRoot : libraryPageRootStandalone}>
@@ -549,7 +617,10 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                   description={t("kbImportSourceUrlDesc")}
                   checked={sourceType === "url"}
                   disabled={submitting}
-                  onChange={() => setSourceType("url")}
+                  onChange={() => {
+                    setSourceType("url")
+                    setChunkStrategy("default")
+                  }}
                 />
               </div>
             </section>
@@ -561,7 +632,10 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                   id="web-url"
                   type="url"
                   value={webUrl}
-                  onChange={(e) => setWebUrl(e.target.value)}
+                  onChange={(e) => {
+                    setWebUrl(e.target.value)
+                    if (error) setError("")
+                  }}
                   placeholder={t("kbImportWebUrlPlaceholder")}
                   disabled={submitting}
                   className={cls("w-full px-3.5", surfaceInput)}
@@ -692,15 +766,17 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                     disabled={submitting}
                     onChange={() => setChunkStrategy("default")}
                   />
-                  <ChunkRadio
-                    id="chunk-custom"
-                    name="chunk-strategy"
-                    label={t("kbImportChunkCustom")}
-                    description={t("kbImportChunkCustomDesc")}
-                    checked={chunkStrategy === "custom"}
-                    disabled={submitting}
-                    onChange={() => setChunkStrategy("custom")}
-                  />
+                  {sourceType !== "url" ? (
+                    <ChunkRadio
+                      id="chunk-custom"
+                      name="chunk-strategy"
+                      label={t("kbImportChunkCustom")}
+                      description={t("kbImportChunkCustomDesc")}
+                      checked={chunkStrategy === "custom"}
+                      disabled={submitting}
+                      onChange={() => setChunkStrategy("custom")}
+                    />
+                  ) : null}
                   {UI_VISIBILITY.kbImportChunkWhole ? (
                     <ChunkRadio
                       id="chunk-whole"
@@ -712,7 +788,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                       onChange={() => setChunkStrategy("whole")}
                     />
                   ) : null}
-                  {UI_VISIBILITY.kbImportChunkPage ? (
+                  {UI_VISIBILITY.kbImportChunkPage && sourceType !== "url" ? (
                     <ChunkRadio
                       id="chunk-page"
                       name="chunk-strategy"
@@ -725,7 +801,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
                   ) : null}
                 </div>
 
-                {chunkStrategy === "custom" ? (
+                {chunkStrategy === "custom" && sourceType !== "url" ? (
                   <CustomChunkSettings
                     mode={customChunkMode}
                     onModeChange={setCustomChunkMode}
@@ -768,7 +844,7 @@ export default function KnowledgeBaseImportPage({ embedded = false }) {
               <div className="col-span-full flex w-full flex-wrap items-center justify-end gap-2 sm:col-start-2 sm:gap-3">
                 <button
                   type="button"
-                  disabled={submitting || sourceType === "url"}
+                  disabled={submitting || !canSubmit}
                   onClick={handleConfirm}
                   className={cls(
                     "inline-flex min-w-0 items-center justify-center px-5 py-2.5 sm:min-w-[7.5rem]",

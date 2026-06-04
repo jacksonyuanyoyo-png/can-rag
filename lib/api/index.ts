@@ -26,3 +26,9 @@ export { normalizeCitations } from './citations'
 export { prepareAssistantMarkdown, getBackendOriginForMarkdown } from './markdown-content'
 export * from './kb-utils'
 export * from './kb-display'
+export {
+  createWebImport,
+  webImportUrl,
+  isValidWebImportUrl,
+} from './web-imports'
+export type { WebImportResponseData, CreateWebImportOptions } from './web-imports'
